@@ -1,0 +1,562 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Dongys">
+  <meta name="keywords" content="">
+  
+  <title>Dubbo SPI - Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10.7.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"dong-ys.github.io","root":"/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Dongys's Blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('https://picture.zwc365.com/getbing.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Dubbo SPI">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2021-07-12 14:15" pubdate>
+        2021年7月12日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      3.8k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      50
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Dubbo SPI</h1>
+            
+            <div class="markdown-body">
+              <h1 id="Dubbo-SPI"><a href="#Dubbo-SPI" class="headerlink" title="Dubbo SPI"></a>Dubbo SPI</h1><h1 id="1-SPI机制介绍"><a href="#1-SPI机制介绍" class="headerlink" title="1. SPI机制介绍"></a>1. SPI机制介绍</h1><h2 id="1-1-什么是SPI"><a href="#1-1-什么是SPI" class="headerlink" title="1.1 什么是SPI"></a>1.1 什么是SPI</h2><p>SPI全称Service Provider Interface，是一种服务发现机制，比如你需要使用一个接口，该接口有三个实现类，这时需要SPI来根据指定的配置或是默认的配置，去加载对应的实现类，然后使用该类的实例对象</p>
+<p>从使用层面来说，<strong>它是以一种服务发现机制，SPI 的本质是将接口实现类的全限定名配置在文件张，并由服务器加载读取配置文件，加载实现类，这样可以在运行时，动态为接口替换实现类</strong>。</p>
+<h2 id="1-2-JDK-SPI示例"><a href="#1-2-JDK-SPI示例" class="headerlink" title="1.2 JDK SPI示例"></a>1.2 JDK SPI示例</h2><p>创建接口和实现类</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">Robot</span> &#123;<br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">sayHello</span><span class="hljs-params">()</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">OptimusPrime</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Robot</span>&#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">sayHello</span><span class="hljs-params">()</span> &#123;<br>        System.out.println(<span class="hljs-string">&quot;OptimusPrime&quot;</span>);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">Bumblebee</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">Robot</span>&#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">sayHello</span><span class="hljs-params">()</span> &#123;<br>        System.out.println(<span class="hljs-string">&quot;Bumblebee&quot;</span>);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>创建配置文件，放在META-INF&#x2F;service&#x2F;接口全限定类名，规定了指定接口的具体实现类的全限定类名</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs stylus">com<span class="hljs-selector-class">.gfk</span><span class="hljs-selector-class">.spi</span><span class="hljs-selector-class">.impl</span><span class="hljs-selector-class">.OptimusPrime</span><br>com<span class="hljs-selector-class">.gfk</span><span class="hljs-selector-class">.spi</span><span class="hljs-selector-class">.iml</span>.Bumblebee<br></code></pre></td></tr></table></figure>
+
+<p>编写测试代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Test</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">sayHello</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>    ServiceLoader&lt;Robot&gt; serviceLoader = ServiceLoader.load(Robot.class);<br>    System.out.println(<span class="hljs-string">&quot;Java SPI&quot;</span>);<br>    serviceLoader.forEach(Robot::sayHello);<br>&#125;<br><span class="hljs-comment">/* 输出 */</span><br>Java SPI<br>OptimusPrime<br>Bumblebee<br></code></pre></td></tr></table></figure>
+
+<p>通过上述测试代码可以看出：使用配置文件，来动态改变一个接口的具体实现类。</p>
+<h2 id="1-3-Dubbo-SPI示例"><a href="#1-3-Dubbo-SPI示例" class="headerlink" title="1.3 Dubbo SPI示例"></a>1.3 Dubbo SPI示例</h2><p>Dubbo并没有使用JDK的SPI机制，而是自己实现了一套SPI机制，功能更强大。</p>
+<p>Dubbo SPI的相关逻辑被封装在ExtensionLoader类中，通过 ExtensionLoader，我们可以加载指定的实现类。Dubbo SPI 所需的配置文件需放置在 META-INF&#x2F;dubbo 路径下，配置内容如下。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs fallback">optimusPrime = org.apache.spi.OptimusPrime<br>bumblebee = org.apache.spi.Bumblebee<br></code></pre></td></tr></table></figure>
+
+<p>JDK SPI的实现会将配置文件中的所有实现类都进行实例化，有些扩展类初始化耗时，并且可能用不上，耗费了资源。</p>
+<p>Dubbo SPI的配置采用键值对的形式，按需加载需要的实现类。</p>
+<p>接口类需要使用@SPI注解，实现类不变。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@SPI</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">Robot</span> &#123;<br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">sayHello</span><span class="hljs-params">()</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>测试类</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Test</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">sayHello</span><span class="hljs-params">()</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>    ExtensionLoader&lt;Robot&gt; extensionLoader = <br>        ExtensionLoader.getExtensionLoader(Robot.class);<br>    <span class="hljs-type">Robot</span> <span class="hljs-variable">optimusPrime</span> <span class="hljs-operator">=</span> extendionLoader.getExtension(<span class="hljs-string">&quot;optimusPrime&quot;</span>);<br>    optimusPrime.satHello();<br>    <span class="hljs-type">Robot</span> <span class="hljs-variable">bumblebee</span> <span class="hljs-operator">=</span> extensionLoader.getExtension(<span class="hljs-string">&quot;bumblebee&quot;</span>);<br>    bumblebe.sayHello();<br>&#125;<br><span class="hljs-comment">/* output */</span><br>Dubbo SPI<br>Hello, I am Optimus Prime.<br>Hello, I am Bumblebee.<br></code></pre></td></tr></table></figure>
+
+<h1 id="2-Dubbo-SPI-源码"><a href="#2-Dubbo-SPI-源码" class="headerlink" title="2. Dubbo SPI 源码"></a>2. Dubbo SPI 源码</h1><h2 id="2-1-核心流程"><a href="#2-1-核心流程" class="headerlink" title="2.1 核心流程"></a>2.1 核心流程</h2><p>在Dubbo SPI的使用中，首先通过ExtensionLoader的getExtensionLoader方法来获取一个ExtensionLoader实例，然后再通过ExtensionLoader的getExtension方法获取具体的扩展类对象。</p>
+<ul>
+<li>getExtensionLoader方法用于从缓存中获取扩展类对应的ExtensionLoader，如果缓存未命中则创建一个新实例。</li>
+<li>getExtension首先检查缓存，若缓存未命中则创建扩展对象</li>
+</ul>
+<p>其中getExtensionLoader源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> &lt;T&gt; ExtensionLoader&lt;T&gt; <span class="hljs-title function_">getExtensionLoader</span><span class="hljs-params">(Class&lt;T&gt; type)</span> &#123;<br>    <span class="hljs-comment">//可行性判断</span><br>    <span class="hljs-keyword">if</span> (type == <span class="hljs-literal">null</span>)<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;Extension type == null&quot;</span>);<br>    <span class="hljs-keyword">if</span> (!type.isInterface()) &#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;Extension type(&quot;</span> + type + <span class="hljs-string">&quot;) is not interface!&quot;</span>);<br>    &#125;<br>    <span class="hljs-keyword">if</span> (!withExtensionAnnotation(type)) &#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;Extension type(&quot;</span> + type +<br>                <span class="hljs-string">&quot;) is not extension, because WITHOUT @&quot;</span> + SPI.class.getSimpleName() + <span class="hljs-string">&quot; Annotation!&quot;</span>);<br>    &#125;<br>	<span class="hljs-comment">//先尝试获取，如果失败就创建一个ExtensionLoader</span><br>    <span class="hljs-comment">//EXTENSION_LOADERS是一个静态ConcurrentHashMap，用来缓存ExtensionLoader</span><br>    ExtensionLoader&lt;T&gt; loader = (ExtensionLoader&lt;T&gt;) EXTENSION_LOADERS.get(type);<br>    <span class="hljs-keyword">if</span> (loader == <span class="hljs-literal">null</span>) &#123;<br>        EXTENSION_LOADERS.putIfAbsent(type, <span class="hljs-keyword">new</span> <span class="hljs-title class_">ExtensionLoader</span>&lt;T&gt;(type));<br>        loader = (ExtensionLoader&lt;T&gt;) EXTENSION_LOADERS.get(type);<br>    &#125;<br>    <span class="hljs-keyword">return</span> loader;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>getExtension源码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> T <span class="hljs-title function_">getExtension</span><span class="hljs-params">(String name)</span> &#123;<br>    <span class="hljs-keyword">if</span> (name == <span class="hljs-literal">null</span> || name.length() == <span class="hljs-number">0</span>)<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;Extension name == null&quot;</span>);<br>    <span class="hljs-keyword">if</span> (<span class="hljs-string">&quot;true&quot;</span>.equals(name)) &#123;<br>        <span class="hljs-comment">// 获取默认的拓展实现类</span><br>        <span class="hljs-keyword">return</span> getDefaultExtension();<br>    &#125;<br>    <span class="hljs-comment">// Holder，用于持有目标对象</span><br>    Holder&lt;Object&gt; holder = cachedInstances.get(name);<br>    <span class="hljs-keyword">if</span> (holder == <span class="hljs-literal">null</span>) &#123;<br>        cachedInstances.putIfAbsent(name, <span class="hljs-keyword">new</span> <span class="hljs-title class_">Holder</span>&lt;Object&gt;());<br>        holder = cachedInstances.get(name);<br>    &#125;<br>    <span class="hljs-type">Object</span> <span class="hljs-variable">instance</span> <span class="hljs-operator">=</span> holder.get();<br>    <span class="hljs-comment">// 双重检查</span><br>    <span class="hljs-keyword">if</span> (instance == <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">synchronized</span> (holder) &#123;<br>            instance = holder.get();<br>            <span class="hljs-keyword">if</span> (instance == <span class="hljs-literal">null</span>) &#123;<br>                <span class="hljs-comment">// 创建拓展实例</span><br>                instance = createExtension(name);<br>                <span class="hljs-comment">// 设置实例到 holder 中</span><br>                holder.set(instance);<br>            &#125;<br>        &#125;<br>    &#125;<br>    <span class="hljs-keyword">return</span> (T) instance;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>getExtension的逻辑比较清晰，先检查缓存，缓存未命中则创建Extension对象，源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> T <span class="hljs-title function_">createExtension</span><span class="hljs-params">(String name)</span> &#123;<br>    <span class="hljs-comment">//从配置文件中加载所有的扩展类，可得到(配置项名称)-&gt;(配置类)的映射关系表</span><br>    Class&lt;?&gt; clazz = getExtensionClasses().get(name);<br>    <span class="hljs-keyword">if</span> (clazz == <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">throw</span> findException(name);<br>    &#125;<br>    <span class="hljs-keyword">try</span> &#123;<br>        <span class="hljs-comment">//EXTENSION_INSTANCES是(配置类)-&gt;(对象实例)的映射关系表</span><br>        <span class="hljs-type">T</span> <span class="hljs-variable">instance</span> <span class="hljs-operator">=</span> (T) EXTENSION_INSTANCES.get(clazz);<br>        <span class="hljs-keyword">if</span> (instance == <span class="hljs-literal">null</span>) &#123;<br>            <span class="hljs-comment">//缓存中不存在，通过反射创建实例</span><br>            EXTENSION_INSTANCES.putIfAbsent(clazz, clazz.newInstance());<br>            instance = (T) EXTENSION_INSTANCES.get(clazz);<br>        &#125;<br>        <span class="hljs-comment">//向实例中注入依赖</span><br>        injectExtension(instance);<br>        Set&lt;Class&lt;?&gt;&gt; wrapperClasses = cachedWrapperClasses;<br>        <span class="hljs-keyword">if</span> (wrapperClasses != <span class="hljs-literal">null</span> &amp;&amp; !wrapperClasses.isEmpty()) &#123;<br>            <span class="hljs-comment">//循环创建wrapper实例</span><br>            <span class="hljs-keyword">for</span> (Class&lt;?&gt; wrapperClass : wrapperClasses) &#123;<br>                <span class="hljs-comment">//将当前instance作为参数传给wrapper的构造方法，并通过反射创建实例</span><br>                <span class="hljs-comment">//然后向Wrapper实例中注入依赖，最后再赋值给instance</span><br>                instance = injectExtension(<br>                  (T)wrapperClass.getConstructor(type).newInstance(instance));<br>            &#125;<br>        &#125;<br>        <span class="hljs-keyword">return</span> instance;<br>    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalStateException</span>(<span class="hljs-string">&quot;Extension instance(name: &quot;</span> + name + <span class="hljs-string">&quot;, class: &quot;</span> +<br>                                        type + <span class="hljs-string">&quot;)  could not be instantiated: &quot;</span> + t.getMessage(), t);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>createExtension的方法逻辑包含以下步骤：</p>
+<ol>
+<li>通过getExtensionClasses获取所有的扩展类</li>
+<li>通过反射创建扩展对象</li>
+<li>向扩展对象中注入依赖</li>
+<li>将扩展对象包裹在相应的Wrapper对象中</li>
+</ol>
+<h2 id="2-2-获取所有扩展类"><a href="#2-2-获取所有扩展类" class="headerlink" title="2.2 获取所有扩展类"></a>2.2 获取所有扩展类</h2><p>我们在通过名称获取拓展类之前，首先需要根据配置文件解析出拓展项名称到拓展类的映射关系表（Map&lt;名称, 拓展类&gt;），之后再根据拓展项名称从映射关系表中取出相应的拓展类即可。相关过程的代码分析如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> Map&lt;String, Class&lt;?&gt;&gt; getExtensionClasses() &#123;<br>    <span class="hljs-comment">// 从缓存中获取已加载的拓展类</span><br>    Map&lt;String, Class&lt;?&gt;&gt; classes = cachedClasses.get();<br>    <span class="hljs-comment">// 双重检查</span><br>    <span class="hljs-keyword">if</span> (classes == <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">synchronized</span> (cachedClasses) &#123;<br>            classes = cachedClasses.get();<br>            <span class="hljs-keyword">if</span> (classes == <span class="hljs-literal">null</span>) &#123;<br>                <span class="hljs-comment">// 加载拓展类</span><br>                classes = loadExtensionClasses();<br>                cachedClasses.set(classes);<br>            &#125;<br>        &#125;<br>    &#125;<br>    <span class="hljs-keyword">return</span> classes;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>先检查缓存，若缓存未命中，则通过 synchronized 加锁。加锁后再次检查缓存，并判空。此时如果 classes 仍为 null，则通过 loadExtensionClasses 加载拓展类。下面分析 loadExtensionClasses 方法的逻辑。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> Map&lt;String, Class&lt;?&gt;&gt; loadExtensionClasses() &#123;<br>    <span class="hljs-comment">// 获取 SPI 注解，这里的 type 变量是在调用 getExtensionLoader 方法时传入的</span><br>    <span class="hljs-keyword">final</span> <span class="hljs-type">SPI</span> <span class="hljs-variable">defaultAnnotation</span> <span class="hljs-operator">=</span> type.getAnnotation(SPI.class);<br>    <span class="hljs-keyword">if</span> (defaultAnnotation != <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-type">String</span> <span class="hljs-variable">value</span> <span class="hljs-operator">=</span> defaultAnnotation.value();<br>        <span class="hljs-keyword">if</span> ((value = value.trim()).length() &gt; <span class="hljs-number">0</span>) &#123;<br>            <span class="hljs-comment">// 对 SPI 注解内容进行切分</span><br>            String[] names = NAME_SEPARATOR.split(value);<br>            <span class="hljs-comment">// 检测 SPI 注解内容是否合法，不合法则抛出异常</span><br>            <span class="hljs-keyword">if</span> (names.length &gt; <span class="hljs-number">1</span>) &#123;<br>                <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalStateException</span>(<span class="hljs-string">&quot;more than 1 default extension name on extension...&quot;</span>);<br>            &#125;<br><br>            <span class="hljs-comment">// 设置默认名称，参考 getDefaultExtension 方法</span><br>            <span class="hljs-keyword">if</span> (names.length == <span class="hljs-number">1</span>) &#123;<br>                cachedDefaultName = names[<span class="hljs-number">0</span>];<br>            &#125;<br>        &#125;<br>    &#125;<br><br>    Map&lt;String, Class&lt;?&gt;&gt; extensionClasses = <span class="hljs-keyword">new</span> <span class="hljs-title class_">HashMap</span>&lt;String, Class&lt;?&gt;&gt;();<br>    <span class="hljs-comment">// 加载指定文件夹下的配置文件</span><br>    loadDirectory(extensionClasses, DUBBO_INTERNAL_DIRECTORY);<br>    loadDirectory(extensionClasses, DUBBO_DIRECTORY);<br>    loadDirectory(extensionClasses, SERVICES_DIRECTORY);<br>    <span class="hljs-keyword">return</span> extensionClasses;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>loadExtensionClasses方法主要完成两件事情：</p>
+<ol>
+<li>对SPI注解进行解析</li>
+<li>调用loadDirectory加载指定文件夹配置文件</li>
+</ol>
+<h2 id="2-3-Dubbo-IOC"><a href="#2-3-Dubbo-IOC" class="headerlink" title="2.3 Dubbo IOC"></a>2.3 Dubbo IOC</h2><p>Dubbo IOC通过setter方法完成依赖注入，首先通过反射获取实例的所有方法，然后遍历并检测方法是否具有setter注解。若有，则通过 ObjectFactory 获取依赖对象，最后通过反射调用 setter 方法将依赖设置到目标对象中，整个过程对应的代码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> T <span class="hljs-title function_">injectExtension</span><span class="hljs-params">(T instance)</span> &#123;<br>    <span class="hljs-keyword">try</span> &#123;<br>        <span class="hljs-keyword">if</span> (objectFactory != <span class="hljs-literal">null</span>) &#123;<br>            <span class="hljs-comment">// 遍历目标类的所有方法</span><br>            <span class="hljs-keyword">for</span> (Method method : instance.getClass().getMethods()) &#123;<br>                <span class="hljs-comment">// 检测方法是否以 set 开头，且方法仅有一个参数，且方法访问级别为 public</span><br>                <span class="hljs-keyword">if</span> (method.getName().startsWith(<span class="hljs-string">&quot;set&quot;</span>)<br>                    &amp;&amp; method.getParameterTypes().length == <span class="hljs-number">1</span><br>                    &amp;&amp; Modifier.isPublic(method.getModifiers())) &#123;<br>                    <span class="hljs-comment">// 获取 setter 方法参数类型</span><br>                    Class&lt;?&gt; pt = method.getParameterTypes()[<span class="hljs-number">0</span>];<br>                    <span class="hljs-keyword">try</span> &#123;<br>                        <span class="hljs-comment">// 获取属性名，比如 setName 方法对应属性名 name</span><br>                        <span class="hljs-type">String</span> <span class="hljs-variable">property</span> <span class="hljs-operator">=</span> method.getName().length() &gt; <span class="hljs-number">3</span> ? <br>                            method.getName().substring(<span class="hljs-number">3</span>, <span class="hljs-number">4</span>).toLowerCase() + <br>                            	method.getName().substring(<span class="hljs-number">4</span>) : <span class="hljs-string">&quot;&quot;</span>;<br>                        <span class="hljs-comment">// 从 ObjectFactory 中获取依赖对象</span><br>                        <span class="hljs-type">Object</span> <span class="hljs-variable">object</span> <span class="hljs-operator">=</span> objectFactory.getExtension(pt, property);<br>                        <span class="hljs-keyword">if</span> (object != <span class="hljs-literal">null</span>) &#123;<br>                            <span class="hljs-comment">// 通过反射调用 setter 方法设置依赖</span><br>                            method.invoke(instance, object);<br>                        &#125;<br>                    &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>                        logger.error(<span class="hljs-string">&quot;fail to inject via method...&quot;</span>);<br>                    &#125;<br>                &#125;<br>            &#125;<br>        &#125;<br>    &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>        logger.error(e.getMessage(), e);<br>    &#125;<br>    <span class="hljs-keyword">return</span> instance;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h1 id="3-SPI自适应扩展"><a href="#3-SPI自适应扩展" class="headerlink" title="3. SPI自适应扩展"></a>3. SPI自适应扩展</h1><h2 id="3-1-介绍"><a href="#3-1-介绍" class="headerlink" title="3.1 介绍"></a>3.1 介绍</h2><p>在 Dubbo 中，很多拓展都是通过 SPI 机制进行加载的，比如 Protocol、Cluster、LoadBalance 等。有时，有些拓展并不想在框架启动阶段被加载，而是希望在拓展方法被调用时，根据运行时参数进行加载。</p>
+<p>这听起来有些矛盾。拓展未被加载，那么拓展方法就无法被调用（静态方法除外）。拓展方法未被调用，拓展就无法被加载。对于这个矛盾的问题，Dubbo 通过自适应拓展机制很好的解决了。</p>
+<p>自适应拓展机制的实现逻辑比较复杂，首先 Dubbo 会为拓展接口生成具有代理功能的代码。然后通过 javassist 或 jdk 编译这段代码，得到 Class 类。最后再通过反射创建代理类。</p>
+<p>通过Protocol来举例，更好的理解Dubbo的SPI自适应扩展的好处。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">Protocol</span> <span class="hljs-variable">protocol</span> <span class="hljs-operator">=</span> ExtensionLoader.getExtensionLoader(Protocol.class).getAdaptiveExtension();<br></code></pre></td></tr></table></figure>
+
+<p>Protocol 接口，在系统运行的时候，，dubbo 会判断一下应该选用这个 Protocol 接口的哪个实现类来实例化对象来使用。</p>
+<p>它会去找一个你配置的 Protocol，将你配置的 Protocol 实现类，加载到 jvm 中来，然后实例化对象。</p>
+<p>再Dubbo的组件中，有许多接口，如Protocol、Cluster、LoadBalance等，有多种实现可以选择，Dubbo在启动时会根据配置动态保留其中一个进行实现，如果没有配置，则选择默认配置。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@SPI(&quot;dubbo&quot;)</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">Protocol</span> &#123;<br><br>    <span class="hljs-type">int</span> <span class="hljs-title function_">getDefaultPort</span><span class="hljs-params">()</span>;<br><br>    <span class="hljs-meta">@Adaptive</span><br>    &lt;T&gt; Exporter&lt;T&gt; <span class="hljs-title function_">export</span><span class="hljs-params">(Invoker&lt;T&gt; invoker)</span> <span class="hljs-keyword">throws</span> RpcException;<br><br>    <span class="hljs-meta">@Adaptive</span><br>    &lt;T&gt; Invoker&lt;T&gt; <span class="hljs-title function_">refer</span><span class="hljs-params">(Class&lt;T&gt; type, URL url)</span> <span class="hljs-keyword">throws</span> RpcException;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">destroy</span><span class="hljs-params">()</span>;<br><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在 dubbo 自己的 jar 里，在 <code>/META_INF/dubbo/internal/com.alibaba.dubbo.rpc.Protocol</code> 文件中：</p>
+<figure class="highlight stylus"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs stylus">dubbo=com<span class="hljs-selector-class">.alibaba</span><span class="hljs-selector-class">.dubbo</span><span class="hljs-selector-class">.rpc</span><span class="hljs-selector-class">.protocol</span><span class="hljs-selector-class">.dubbo</span><span class="hljs-selector-class">.DubboProtocol</span><br>http=com<span class="hljs-selector-class">.alibaba</span><span class="hljs-selector-class">.dubbo</span><span class="hljs-selector-class">.rpc</span><span class="hljs-selector-class">.protocol</span><span class="hljs-selector-class">.http</span><span class="hljs-selector-class">.HttpProtocol</span><br>hessian=com<span class="hljs-selector-class">.alibaba</span><span class="hljs-selector-class">.dubbo</span><span class="hljs-selector-class">.rpc</span><span class="hljs-selector-class">.protocol</span><span class="hljs-selector-class">.hessian</span>.HessianProtocol<br></code></pre></td></tr></table></figure>
+
+<p><code>@SPI(&quot;dubbo&quot;)</code> 说的是，通过 SPI 机制来提供实现类，实现类是通过 dubbo 作为默认 key 去配置文件里找到的，配置文件名称与接口全限定名一样的，通过 dubbo 作为 key 可以找到默认的实现类就是 <code>com.alibaba.dubbo.rpc.protocol.dubbo.DubboProtocol</code> 。</p>
+<p>如果想要动态替换掉默认的实现类，需要使用 <code>@Adaptive</code> 接口，Protocol 接口中，有两个方法加了 <code>@Adaptive</code> 注解，就是说那俩接口会被代理实现。</p>
+<p>如果需要扩展自己的组件，可以自己写一个工程，并打成jar包。在 <code>src/main/resources</code> 目录下，建立一个 <code>META-INF/services</code> 文件夹，在里面新建一个文件名： <code>com.alibaba.dubbo.rpc.Protocol</code> ，然后在文件中写入自定义实现的全限定类名，如 <code>my=com.dys.MyProtocol</code> 。</p>
+<p>之后在Dubbo消费者工程中通过maven引入jar包，当Dubbo启动时，就会加载自定义的组件。</p>
+<h2 id="3-2-Adptive的作用"><a href="#3-2-Adptive的作用" class="headerlink" title="3.2 @Adptive的作用"></a>3.2 @Adptive的作用</h2><p>Dubbo 中的扩展点一般都具有很多个扩展实现，简单说就是一个接口存在很多个实现。但接口是不能被实例化的，所以要在运行时找一个具体的实现类来实例化。 <code>@Adaptive</code> 是用来在运行时决定选择哪个实现的。如果标注在类上就表示这个类是适配类。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Documented</span><br><span class="hljs-meta">@Retention(RetentionPolicy.RUNTIME)</span><br><span class="hljs-meta">@Target(&#123;ElementType.TYPE, ElementType.METHOD&#125;)</span><br><span class="hljs-keyword">public</span> <span class="hljs-meta">@interface</span> Adaptive &#123;<br>    String[] value() <span class="hljs-keyword">default</span> &#123;&#125;;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在 Dubbo 中，仅有两个类被 Adaptive 注解了，分别是 AdaptiveCompiler 和 AdaptiveExtensionFactory。此种情况，表示拓展的加载逻辑由人工编码完成。多时候，Adaptive 是注解在接口方法上的，表示这个方法要在运行时通过字节码生成工具动态生成方法体，在方法体内选择具体的实现来使用，比如 Protocol 接口：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@SPI(&quot;dubbo&quot;)</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">Protocol</span> &#123;<br>  	<span class="hljs-meta">@Adaptive</span><br>  	&lt;T&gt; Exporter&lt;T&gt; <span class="hljs-title function_">export</span><span class="hljs-params">(Invoker&lt;T&gt; invoker)</span> <span class="hljs-keyword">throws</span> RpcException;<br>    <span class="hljs-meta">@Adaptive</span><br>  	&lt;T&gt; Invoker&lt;T&gt; <span class="hljs-title function_">refer</span><span class="hljs-params">(Class&lt;T&gt; type, URL url)</span> <span class="hljs-keyword">throws</span> RpcException;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>很明显，Protocol 的每个实现都有自己暴露服务和引用服务的逻辑，如果直接根据 URL 去解析要使用的协议并实例化显然不是一个好的选择，于是通过了字节码增强的方式来实现。</p>
+<h2 id="3-3-获取自适应扩展入口"><a href="#3-3-获取自适应扩展入口" class="headerlink" title="3.3 获取自适应扩展入口"></a>3.3 获取自适应扩展入口</h2><p>getAdaptiveExtension 方法是获取自适应拓展的入口方法。该方法在ExtensionLoader的构造器中调用，即在ExtensionLoader初始化时获取自适应扩展的入口，进行自适应扩展类的生成。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-title function_">ExtensionLoader</span><span class="hljs-params">(Class&lt;?&gt; type)</span> &#123;<br>    <span class="hljs-comment">// 存储要创建的 loader 的类型</span><br>    <span class="hljs-built_in">this</span>.type = type;<br><br>    <span class="hljs-comment">// objectFactory 是 ExtensionFactory 类型的对象，是用来依赖注入的工厂</span><br>    objectFactory <br>        = (type == ExtensionFactory.class ? <br>           <span class="hljs-literal">null</span> : ExtensionLoader<br>           .getExtensionLoader(ExtensionFactory.class)<br>           .getAdaptiveExtension());<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>具体源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> T <span class="hljs-title function_">getAdaptiveExtension</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-comment">// 从缓存中获取自适应拓展</span><br>    <span class="hljs-type">Object</span> <span class="hljs-variable">instance</span> <span class="hljs-operator">=</span> cachedAdaptiveInstance.get();<br>    <span class="hljs-keyword">if</span> (instance == <span class="hljs-literal">null</span>) &#123;    <span class="hljs-comment">// 缓存未命中</span><br>        <span class="hljs-keyword">if</span> (createAdaptiveInstanceError == <span class="hljs-literal">null</span>) &#123;<br>            <span class="hljs-keyword">synchronized</span> (cachedAdaptiveInstance) &#123;<br>                instance = cachedAdaptiveInstance.get();<br>                <span class="hljs-keyword">if</span> (instance == <span class="hljs-literal">null</span>) &#123;<br>                    <span class="hljs-keyword">try</span> &#123;<br>                        <span class="hljs-comment">// 创建自适应拓展</span><br>                        instance = createAdaptiveExtension();<br>                        <span class="hljs-comment">// 设置自适应拓展到缓存中</span><br>                        cachedAdaptiveInstance.set(instance);<br>                    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;<br>                        createAdaptiveInstanceError = t;<br>                        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalStateException</span>(<span class="hljs-string">&quot;fail to create adaptive instance: ...&quot;</span>);<br>                    &#125;<br>                &#125;<br>            &#125;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalStateException</span>(<span class="hljs-string">&quot;fail to create adaptive instance:  ...&quot;</span>);<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-keyword">return</span> (T) instance;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>getAdaptiveExtension 方法首先会检查缓存，缓存未命中，则调用 createAdaptiveExtension 方法创建自适应拓展。下面是createAdaptiveExtension 方法的代码。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> T <span class="hljs-title function_">createAdaptiveExtension</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">try</span> &#123;<br>        <span class="hljs-comment">// 获取自适应拓展类，并通过反射实例化</span><br>        <span class="hljs-keyword">return</span> injectExtension((T) getAdaptiveExtensionClass().newInstance());<br>    &#125; <span class="hljs-keyword">catch</span> (Exception e) &#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalStateException</span>(<span class="hljs-string">&quot;Can not create adaptive extension ...&quot;</span>);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>createAdaptiveExtension 包含了三个逻辑，分别如下：</p>
+<ol>
+<li>调用 getAdaptiveExtensionClass 方法获取自适应拓展 Class 对象</li>
+<li>通过反射进行实例化</li>
+<li>调用 injectExtension 方法向拓展实例中注入依赖</li>
+</ol>
+<p>getAdaptiveExtensionClass代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> Class&lt;?&gt; getAdaptiveExtensionClass() &#123;<br>    <span class="hljs-comment">// 通过 SPI 获取所有的拓展类</span><br>    getExtensionClasses();<br>    <span class="hljs-comment">// 检查缓存，若缓存不为空，则直接返回缓存</span><br>    <span class="hljs-keyword">if</span> (cachedAdaptiveClass != <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">return</span> cachedAdaptiveClass;<br>    &#125;<br>    <span class="hljs-comment">// 创建自适应拓展类</span><br>    <span class="hljs-type">return</span> <span class="hljs-variable">cachedAdaptiveClass</span> <span class="hljs-operator">=</span> createAdaptiveExtensionClass();<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>getAdaptiveExtensionClass 方法同样包含了三个逻辑，如下：</p>
+<ol>
+<li>调用 getExtensionClasses 获取所有的拓展类</li>
+<li>检查缓存，若缓存不为空，则返回缓存</li>
+<li>若缓存为空，则调用 createAdaptiveExtensionClass 创建自适应拓展类</li>
+</ol>
+<p>createAdaptiveExtensionClass代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> Class&lt;?&gt; createAdaptiveExtensionClass() &#123;<br>    <span class="hljs-comment">// 构建自适应拓展代码</span><br>    <span class="hljs-type">String</span> <span class="hljs-variable">code</span> <span class="hljs-operator">=</span> createAdaptiveExtensionClassCode();<br>    <span class="hljs-type">ClassLoader</span> <span class="hljs-variable">classLoader</span> <span class="hljs-operator">=</span> findClassLoader();<br>    <span class="hljs-comment">// 获取编译器实现类</span><br>    com.alibaba.dubbo.common.compiler.<span class="hljs-type">Compiler</span> <span class="hljs-variable">compiler</span> <span class="hljs-operator">=</span> ExtensionLoader.getExtensionLoader(com.alibaba.dubbo.common.compiler.Compiler.class).getAdaptiveExtension();<br>    <span class="hljs-comment">// 编译代码，生成 Class</span><br>    <span class="hljs-keyword">return</span> compiler.compile(code, classLoader);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="3-4-自适应扩展代码生成"><a href="#3-4-自适应扩展代码生成" class="headerlink" title="3.4 自适应扩展代码生成"></a>3.4 自适应扩展代码生成</h2><p>由createAdaptiveExtensionClassCode进行代码生成，主要包含如下两个逻辑：</p>
+<ol>
+<li>Adaptive注解检测，通过反射检测接口方法是否包含 Adaptive 注解，对于要生成自适应拓展的接口，至少有一个方法被 Adaptive 注解修饰。若不满足此条件，就会抛出运行时异常。</li>
+<li>通过 Adaptive 注解检测后，即可开始生成代码。<ol>
+<li>获取URL数据，从 URL 中提取目标拓展的名称。</li>
+<li>获取 Adaptive 注解值，注解值 value 类型为 String[]。</li>
+<li>生成拓展名获取逻辑，根据 SPI 和 Adaptive 注解值生成“获取拓展名逻辑”。</li>
+<li>生成拓展加载与目标方法调用逻辑</li>
+<li>生成完整的方法</li>
+</ol>
+</li>
+</ol>
+<p>代码生成的逻辑较为复杂和繁琐，具体实现可以查看官方文档。</p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Dubbo/">Dubbo</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Dubbo/">Dubbo</a>
+                    
+                      <a class="hover-with-bg" href="/tags/SPI/">SPI</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2021/07/12/Netty-NIO/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Netty-NIO</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/tocbot@4.12.3/dist/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4.3.1/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js" ></script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>
