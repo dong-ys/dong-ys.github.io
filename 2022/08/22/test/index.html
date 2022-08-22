@@ -18,7 +18,7 @@
   <meta name="author" content="Dongys">
   <meta name="keywords" content="">
   
-  <title>Kubernetes(十)-DashBoard - Blog</title>
+  <title>test - Blog</title>
 
   <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" />
 
@@ -163,7 +163,7 @@
       <div class="full-bg-img">
         <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
           <div class="page-header text-center fade-in-up">
-            <span class="h2" id="subtitle" title="Kubernetes(十)-DashBoard">
+            <span class="h2" id="subtitle" title="test">
               
             </span>
 
@@ -173,8 +173,8 @@
   
     <span class="post-meta">
       <i class="iconfont icon-date-fill" aria-hidden="true"></i>
-      <time datetime="2021-08-24 16:59" pubdate>
-        2021年8月24日 下午
+      <time datetime="2022-08-22 22:59" pubdate>
+        2022年8月22日 晚上
       </time>
     </span>
   
@@ -185,7 +185,7 @@
     
     <span class="post-meta mr-2">
       <i class="iconfont icon-chart"></i>
-      541 字
+      2 字
     </span>
   
 
@@ -195,7 +195,7 @@
       <i class="iconfont icon-clock-fill"></i>
       
       
-      8
+      1
        分钟
     </span>
   
@@ -225,53 +225,15 @@
         <div class="py-5" id="board">
           <article class="post-content mx-auto">
             <!-- SEO header -->
-            <h1 style="display: none">Kubernetes(十)-DashBoard</h1>
+            <h1 style="display: none">test</h1>
             
             <div class="markdown-body">
-              <h1 id="Kubernetes-十-DashBoard"><a href="#Kubernetes-十-DashBoard" class="headerlink" title="Kubernetes(十)-DashBoard"></a>Kubernetes(十)-DashBoard</h1><h2 id="1-概述"><a href="#1-概述" class="headerlink" title="1. 概述"></a>1. 概述</h2><p>之前在kubernetes中完成的所有操作都是通过命令行工具kubectl完成的。其实，为了提供更丰富的用户体验，kubernetes还开发了一个基于web的用户界面（Dashboard）。用户可以使用Dashboard部署容器化的应用，还可以监控应用的状态，执行故障排查以及管理kubernetes中各种资源。</p>
-<h2 id="2-部署Dashboard"><a href="#2-部署Dashboard" class="headerlink" title="2. 部署Dashboard"></a>2. 部署Dashboard</h2><h3 id="2-1-下载yaml，并运行Dashboard"><a href="#2-1-下载yaml，并运行Dashboard" class="headerlink" title="2.1 下载yaml，并运行Dashboard"></a>2.1 下载yaml，并运行Dashboard</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">下载yaml</span><br>[root@master ~]# wget  https://raw.githubusercontent.com/kubernetes/dashboard/v2.0.0/aio/deploy/recommended.yaml<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">修改kubernetes-dashboard的Service类型</span><br>kind: Service<br>apiVersion: v1<br>metadata:<br>  labels:<br>    k8s-app: kubernetes-dashboard<br>  name: kubernetes-dashboard<br>  namespace: kubernetes-dashboard<br>spec:<br>  type: NodePort  # 新增<br>  ports:<br>    - port: 443<br>      targetPort: 8443<br>      nodePort: 30009  # 新增<br>  selector:<br>    k8s-app: kubernetes-dashboard<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">部署</span><br>[root@master ~]# kubectl create -f recommended.yaml<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看namespace下的kubernetes-dashboard下的资源</span><br>[root@master ~]# kubectl get pod,svc -n kubernetes-dashboard <br>NAME                                             READY   STATUS    RESTARTS   AGE<br>pod/dashboard-metrics-scraper-6b4884c9d5-vl5bv   1/1     Running   0          2m9s<br>pod/kubernetes-dashboard-7b544877d5-pjmnt        1/1     Running   0          2m10s<br><br>NAME                                TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)         AGE<br>service/dashboard-metrics-scraper   ClusterIP   10.111.19.242    &lt;none&gt;        8000/TCP        2m10s<br>service/kubernetes-dashboard        NodePort    10.110.251.117   &lt;none&gt;        443:30009/TCP   2m10s<br></code></pre></td></tr></table></figure>
-
-<h3 id="2-2-创建账号，获取token"><a href="#2-2-创建账号，获取token" class="headerlink" title="2.2 创建账号，获取token"></a>2.2 创建账号，获取token</h3><figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">创建账号</span><br>[root@master ~]# kubectl create serviceaccount dashboard-admin -n kubernetes-dashboard<br>serviceaccount/dashboard-admin created<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">授权</span><br>[root@master ~]# kubectl create clusterrolebinding dashboard-admin-rb --clusterrole=cluster-admin --serviceaccount=kubernetes-dashboard:dashboard-admin<br>clusterrolebinding.rbac.authorization.k8s.io/dashboard-admin-rb created<br>[root@master ~]# kubectl get secrets -n kubernetes-dashboard | grep dashboard-admin<br>dashboard-admin-token-f4nwv        kubernetes.io/service-account-token   3      15s<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">获取账号token</span><br>[root@master ~]# kubectl describe secrets dashboard-admin-token-f4nwv -n kubernetes-dashboard      <br>Name:         dashboard-admin-token-f4nwv<br>Namespace:    kubernetes-dashboard<br>Labels:       &lt;none&gt;<br>Annotations:  kubernetes.io/service-account.name: dashboard-admin<br>              kubernetes.io/service-account.uid: 65db1dda-b51b-4b05-abfc-c7e18fdd7eb4<br><br>Type:  kubernetes.io/service-account-token<br><br>Data<br>====<br>ca.crt:     1025 bytes<br>namespace:  20 bytes<br>token:      eyJhbGciOiJSUzI1NiIsImtpZCI6IjZBcG5aUHdIWDNBRDhxSWdLbzg2Ynh6eEFsN1pqVllrV0dwMnZ4c2lDU28ifQ.eyJpc3MiOiJrdWJlcm5ldGVzL3NlcnZpY2VhY2NvdW50Iiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9uYW1lc3BhY2UiOiJrdWJlcm5ldGVzLWRhc2hib2FyZCIsImt1YmVybmV0ZXMuaW8vc2VydmljZWFjY291bnQvc2VjcmV0Lm5hbWUiOiJkYXNoYm9hcmQtYWRtaW4tdG9rZW4tZjRud3YiLCJrdWJlcm5ldGVzLmlvL3NlcnZpY2VhY2NvdW50L3NlcnZpY2UtYWNjb3VudC5uYW1lIjoiZGFzaGJvYXJkLWFkbWluIiwia3ViZXJuZXRlcy5pby9zZXJ2aWNlYWNjb3VudC9zZXJ2aWNlLWFjY291bnQudWlkIjoiNjVkYjFkZGEtYjUxYi00YjA1LWFiZmMtYzdlMThmZGQ3ZWI0Iiwic3ViIjoic3lzdGVtOnNlcnZpY2VhY2NvdW50Omt1YmVybmV0ZXMtZGFzaGJvYXJkOmRhc2hib2FyZC1hZG1pbiJ9.YnorlbvJxy5PgNFvaFzZKhBGVWiBW3JP9-FwWoRVQUk7ltCHXnBaRWC59Pr8Cwf5y5H8p1kmyY5N0zF8DXEYwNgeLY7v5-EcPoPdeJj_TnM1NJVOc-_p9gMOKrv-MGec9p8uejKPKp8BKCSYzuT7UpkhEiA-y9GzBZf5eoWPWmA5JC8bwarC93QutLU5DiBNPMwTyJ3HFims26eBABjGWRoiu5P_cwZPD4xgmY6VR7qdUfhDY40ufO3aAZvHxaV7exAbcas5tsY4eA65VvGp6G-8ioPF1zuOkQAnxbN-pMeTG0Uc2lZgObyLKHh0NyD_yWMGjn0Pvw58SWvU1GL7CA<br></code></pre></td></tr></table></figure>
-
-<h3 id="2-3-通过浏览器访问Dashboard的UI"><a href="#2-3-通过浏览器访问Dashboard的UI" class="headerlink" title="2.3 通过浏览器访问Dashboard的UI"></a>2.3 通过浏览器访问Dashboard的UI</h3><p>在登陆页面上输入上面的token</p>
-<p><img src="/Kubernetes(%E5%8D%81)-DashBoard/image-20210824171057795-1629796425251.png" srcset="/img/loading.gif" lazyload alt="image-20210824171057795"></p>
-<p>出现下面的页面代表成功</p>
-<p><img src="/Kubernetes(%E5%8D%81)-DashBoard/image-20210824171123383-1629796426998.png" srcset="/img/loading.gif" lazyload alt="image-20210824171123383"></p>
-<h2 id="3-使用DashBoard"><a href="#3-使用DashBoard" class="headerlink" title="3. 使用DashBoard"></a>3. 使用DashBoard</h2><p><strong>查看</strong></p>
-<p>选择指定的命名空间<code>dev</code>，然后点击<code>Deployments</code>，查看dev空间下的所有deployment</p>
-<p><img src="/Kubernetes(%E5%8D%81)-DashBoard/image-20200520154628679.png" srcset="/img/loading.gif" lazyload alt="img"></p>
-<p><strong>扩缩容</strong></p>
-<p>在<code>Deployment</code>上点击<code>规模</code>，然后指定<code>目标副本数量</code>，点击确定</p>
-<p><img src="/Kubernetes(%E5%8D%81)-DashBoard/image-20200520162605102.png" srcset="/img/loading.gif" lazyload alt="img"></p>
-<p><strong>编辑</strong></p>
-<p>在<code>Deployment</code>上点击<code>编辑</code>，然后修改<code>yaml文件</code>，点击确定</p>
-<p><img src="/Kubernetes(%E5%8D%81)-DashBoard/image-20200520163253644.png" srcset="/img/loading.gif" lazyload alt="image-20200520163253644"></p>
-<p><strong>查看Pod</strong></p>
-<p>点击<code>Pods</code>, 查看pods列表</p>
-<p><img src="/Kubernetes(%E5%8D%81)-DashBoard/image-20200520163552110.png" srcset="/img/loading.gif" lazyload alt="img"></p>
-<p><strong>操作Pod</strong></p>
-<p>选中某个Pod，可以对其执行日志（logs）、进入执行（exec）、编辑、删除操作</p>
-<p><img src="/Kubernetes(%E5%8D%81)-DashBoard/image-20200520163832827.png" srcset="/img/loading.gif" lazyload alt="img"></p>
-
+              <h1 id="Hello-World"><a href="#Hello-World" class="headerlink" title="Hello World!"></a>Hello World!</h1>
             </div>
             <hr>
             <div>
               <div class="post-metas mb-3">
                 
-                  <div class="post-meta mr-3">
-                    <i class="iconfont icon-category"></i>
-                    
-                      <a class="hover-with-bg" href="/categories/Kubernets/">Kubernets</a>
-                    
-                  </div>
-                
-                
-                  <div class="post-meta">
-                    <i class="iconfont icon-tags"></i>
-                    
-                      <a class="hover-with-bg" href="/tags/Kubernetes/">Kubernetes</a>
-                    
-                  </div>
                 
               </div>
               
@@ -286,18 +248,12 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2022/08/22/test/">
-                        <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">test</span>
-                        <span class="visible-mobile">上一篇</span>
-                      </a>
-                    
                   </article>
                   <article class="post-next col-6">
                     
                     
-                      <a href="/2021/08/24/Kubernetes(%E4%B9%9D)-%E5%AE%89%E5%85%A8%E8%AE%A4%E8%AF%81/">
-                        <span class="hidden-mobile">Kubernetes(九)-安全认证</span>
+                      <a href="/2021/08/24/Kubernetes(%CA%AE)-DashBoard/">
+                        <span class="hidden-mobile">Kubernetes(十)-DashBoard</span>
                         <span class="visible-mobile">下一篇</span>
                         <i class="iconfont icon-arrowright"></i>
                       </a>
