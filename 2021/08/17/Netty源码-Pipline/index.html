@@ -1,0 +1,644 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Dongys">
+  <meta name="keywords" content="">
+  
+  <title>Netty源码-Pipline - Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10.7.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"dong-ys.github.io","root":"/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Dongys's Blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('https://picture.zwc365.com/getbing.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Netty源码-Pipline">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2021-08-17 19:14" pubdate>
+        2021年8月17日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      5k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      69
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Netty源码-Pipline</h1>
+            
+            <div class="markdown-body">
+              <h1 id="Netty源码-Pipline"><a href="#Netty源码-Pipline" class="headerlink" title="Netty源码-Pipline"></a>Netty源码-Pipline</h1><p><code>ChannelPipeline</code>数据管道是<code>ChannelHandler</code>数据处理器的容器，负责<code>ChannelHandler</code>的管理和事件的拦截与调度</p>
+<p><code>channelPipeline</code>数据结构是双向链表,每一个节点都是<code>channelContext</code>,<code>channelContext</code>里面维护了对应的<code>handler</code>和<code>pipeline</code>的引用</p>
+<h2 id="初始化"><a href="#初始化" class="headerlink" title="初始化"></a>初始化</h2><p>在<code>Channel</code>初始化时会调用到<code>AbstractChannel</code>的构造方法，<code>Pipeline</code>的初始化动作是在<code>AbstractChannel</code>构造方法中完成的</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">protected</span> <span class="hljs-title function_">AbstractChannel</span><span class="hljs-params">(Channel parent)</span> &#123;<br>    <span class="hljs-built_in">this</span>.parent = parent;<br>    id = newId();<br>    unsafe = newUnsafe();<br>    pipeline = newChannelPipeline();<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>程序的入口,<code>AbstractChannel</code>的<code>pipeline = newChannelPipeline();</code> 跟进去,看到他的源码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">protected</span> DefaultChannelPipeline <span class="hljs-title function_">newChannelPipeline</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">DefaultChannelPipeline</span>(<span class="hljs-built_in">this</span>);<br>&#125;<br><br><span class="hljs-keyword">protected</span> <span class="hljs-title function_">DefaultChannelPipeline</span><span class="hljs-params">(Channel channel)</span> &#123;<br>    <span class="hljs-built_in">this</span>.channel = ObjectUtil.checkNotNull(channel, <span class="hljs-string">&quot;channel&quot;</span>);<br>    <span class="hljs-comment">// 把当前的Channel 保存起来</span><br>    succeededFuture = <span class="hljs-keyword">new</span> <span class="hljs-title class_">SucceededChannelFuture</span>(channel, <span class="hljs-literal">null</span>);<br>    voidPromise =  <span class="hljs-keyword">new</span> <span class="hljs-title class_">VoidChannelPromise</span>(channel, <span class="hljs-literal">true</span>);<br>    <span class="hljs-comment">// 设置尾节点</span><br>    tail = <span class="hljs-keyword">new</span> <span class="hljs-title class_">TailContext</span>(<span class="hljs-built_in">this</span>);<br>    <span class="hljs-comment">// 设置头头节点</span><br>    head = <span class="hljs-keyword">new</span> <span class="hljs-title class_">HeadContext</span>(<span class="hljs-built_in">this</span>);<br>    head.next = tail;<br>    tail.prev = head;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><code>DefaultChannelPipeline</code>是<code>channelPipeline</code>的默认实现，我们看一下下面的 <code>Channel</code>、<code>ChannelContext</code>、<code>ChannelPipeline</code>的继承体系图</p>
+<img src="/2021/08/17/Netty%E6%BA%90%E7%A0%81-Pipline/1496926-20190720112751462-390044516.png" srcset="/img/loading.gif" lazyload class="" title="pipeline和context的关系图">
+
+<p>在<code>newChannelPipeline()</code>中调用了<code>DefaultChannelPipeline</code>的构造方法，<code>DefaultChannelPipeline</code>构造方法主要完成了三件事。首先将与之关联的Channel保存在属性Channel中，然后实例化了两个对象(一个是<code>TailContext</code>实例tail，一个是<code>HeadContext</code>实例head)，然后将head和tail相互指向，构成了一个双向链表。</p>
+<img src="/2021/08/17/Netty%E6%BA%90%E7%A0%81-Pipline/ChannelPipeline%E6%95%B0%E6%8D%AE%E7%BB%93%E6%9E%84.png" srcset="/img/loading.gif" lazyload class="" title="ChannelPipeline数据结构">
+
+<p>下图是<code>HeaderContext</code>和<code>TailContext</code>的声明</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">final</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">HeadContext</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">AbstractChannelHandlerContext</span><br>            <span class="hljs-keyword">implements</span> <span class="hljs-title class_">ChannelOutboundHandler</span>, ChannelInboundHandler &#123;<br>    <span class="hljs-keyword">private</span> <span class="hljs-keyword">final</span> Unsafe unsafe;<br>    HeadContext(DefaultChannelPipeline pipeline) &#123;<br>        <span class="hljs-built_in">super</span>(pipeline, <span class="hljs-literal">null</span>, HEAD_NAME, HeadContext.class);<br>        unsafe = pipeline.channel().unsafe();<br>        setAddComplete();<br>    &#125;<br>&#125;<br><span class="hljs-keyword">final</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">TailContext</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">AbstractChannelHandlerContext</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">ChannelInboundHandler</span> &#123;<br><br>    TailContext(DefaultChannelPipeline pipeline) &#123;<br>        <span class="hljs-built_in">super</span>(pipeline, <span class="hljs-literal">null</span>, TAIL_NAME, TailContext.class);<br>        setAddComplete();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这个tail节点是<code>inbound</code>类型的处理器，header是<code>Inbound</code>类型的处理器, 同时也是出站处理器</p>
+<p>对Netty来说用发送过来的数据，要就从header节点开始往后传播。 因为是双向链表，直接找后一个inbound类型的节点，于是数据msg就从header之后的第一个结点往后传播，如果一直到最后，都只是传播数据而没有任何处理就会传播到tail节点，因为tail也是inbound类型的,，t<strong>ail节点会替我们释放掉这个msg，防止内存泄露</strong></p>
+<p>当然如果我们自己使用了msg，而没往后传播，也没有释放，内存泄露是早晚的时，这就是为啥tail是Inbound类型的，header节点和它相反</p>
+<p><strong><code>DefaultChannelPipeline</code>、<code>ChannelHandlerContext</code>、<code>ChannelHandler</code>的关系</strong></p>
+<p><code>DefaultChannelPipeline</code>中的每个节点是一个<code>ChannelHandlerContext</code>对象(一个<code>ChannelPipeline</code>中可以有多个<code>ChannelHandler</code>实例，而每一个<code>ChannelHandler</code>实例与<code>ChannelPipeline</code>之间的桥梁就是<code>ChannelHandlerContext</code>实例)</p>
+<h2 id="添加节点"><a href="#添加节点" class="headerlink" title="添加节点"></a>添加节点</h2><h3 id="ChannelInitializer-的添加"><a href="#ChannelInitializer-的添加" class="headerlink" title="ChannelInitializer 的添加"></a>ChannelInitializer 的添加</h3><p>最开始的时候<code>ChannelPipeline </code>中含有两个<code>ChannelHandlerContext</code>，但是这个Pipeline 并不能实现什么特殊的功能，因为我们还没有给它添加自定义的<code>ChannelHandler</code>。通常来说，我们在初始化<code>Bootstrap</code>，会添加我们自定义的<code>ChannelHandler</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">Bootstrap</span> <span class="hljs-variable">bootstrap</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">Bootstrap</span>();<br>bootstrap.group(group)<br>.channel(NioSocketChannel.class)<br>.option(ChannelOption.SO_KEEPALIVE, <span class="hljs-literal">true</span>)<br>.handler(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ChannelInitializer</span>&lt;SocketChannel&gt;() &#123;<br>　　<span class="hljs-meta">@Override</span><br>　　<span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>　　　　<span class="hljs-type">ChannelPipeline</span> <span class="hljs-variable">pipeline</span> <span class="hljs-operator">=</span> ch.pipeline();<br>　　　　pipeline.addLast(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ChatClientHandler</span>(nickName));<br>　　&#125;<br>&#125;);<br></code></pre></td></tr></table></figure>
+
+<p>在调用handler 时，传入了<code>ChannelInitializer </code>对象，它提供了一个<code>initChannel()</code>方法给我我们初始化<code>ChannelHandler</code>。最后将这个匿名的Handler保存到<code>AbstractBootstrap</code>中。</p>
+<p>通过代码跟踪，我们发现<code>ChannelInitializer </code>是在<code>Bootstrap.init()</code>方法中添加到<code>ChannelPipeline </code>中的，其代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">void</span> <span class="hljs-title function_">init</span><span class="hljs-params">(Channel channel)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>        <span class="hljs-type">ChannelPipeline</span> <span class="hljs-variable">p</span> <span class="hljs-operator">=</span> channel.pipeline();<br>        p.addLast(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ChannelHandler</span>[]&#123;<span class="hljs-built_in">this</span>.config.handler()&#125;);<br> 　　　　。。。。。。<br>&#125;<br><span class="hljs-comment">//AbstractBootstrapConfig</span><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelHandler <span class="hljs-title function_">handler</span><span class="hljs-params">()</span> &#123;<br>　　<span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>.bootstrap.handler();<br>&#125;<br><span class="hljs-comment">//AbstractBootstrap</span><br><span class="hljs-keyword">final</span> ChannelHandler <span class="hljs-title function_">handler</span><span class="hljs-params">()</span> &#123;<br>        <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>.handler;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在<code>Bootstrap.init()</code>方法中会调用<code>p.addLast()</code>方法，将<code>ChannelInitializer </code>插入到链表的末端</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelPipeline <span class="hljs-title function_">addLast</span><span class="hljs-params">(ChannelHandler... handlers)</span> &#123;<br>    <span class="hljs-keyword">return</span> addLast(<span class="hljs-literal">null</span>, handlers);<br>&#125;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelPipeline <span class="hljs-title function_">addLast</span><span class="hljs-params">(EventExecutorGroup executor, ChannelHandler... handlers)</span> &#123;<br>    <span class="hljs-keyword">if</span> (handlers == <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">NullPointerException</span>(<span class="hljs-string">&quot;handlers&quot;</span>);<br>    &#125;<br>    <span class="hljs-keyword">for</span> (ChannelHandler h: handlers) &#123;<br>        <span class="hljs-keyword">if</span> (h == <span class="hljs-literal">null</span>) &#123;<br>            <span class="hljs-keyword">break</span>;<br>        &#125;<br>        addLast(executor, <span class="hljs-literal">null</span>, h);<br>    &#125;<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelPipeline <span class="hljs-title function_">addLast</span><span class="hljs-params">(EventExecutorGroup group, String name, ChannelHandler handler)</span> &#123;<br>    <span class="hljs-keyword">final</span> AbstractChannelHandlerContext newCtx;<br>    <span class="hljs-keyword">synchronized</span> (<span class="hljs-built_in">this</span>) &#123;<br>        <span class="hljs-comment">// 1.禁止非Sharable的handler重复添加到不同的pipeline中</span><br>        checkMultiplicity(handler);<br><br>        <span class="hljs-comment">// 2.创建节点 =&gt; DefaultChannelHandlerContext</span><br>        newCtx = newContext(group, filterName(name, handler), handler);<br><br>        <span class="hljs-comment">// 3.添加节点</span><br>        addLast0(newCtx);<br><br>        <span class="hljs-comment">// 如果channel没有与eventloop绑定</span><br>        <span class="hljs-comment">// 则创建一个任务 这个任务会在channel被register的时候调用</span><br>        <span class="hljs-keyword">if</span> (!registered) &#123;<br>            newCtx.setAddPending();<br>            callHandlerCallbackLater(newCtx, <span class="hljs-literal">true</span>);<br>            <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>        &#125;<br><br>        <span class="hljs-comment">// 4.回调用户方法</span><br>        <span class="hljs-type">EventExecutor</span> <span class="hljs-variable">executor</span> <span class="hljs-operator">=</span> newCtx.executor();<br>        <span class="hljs-keyword">if</span> (!executor.inEventLoop()) &#123;<br>            newCtx.setAddPending();<br>            executor.execute(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Runnable</span>() &#123;<br>                <span class="hljs-meta">@Override</span><br>                <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> &#123;<br>                    callHandlerAdded0(newCtx);<br>                &#125;<br>            &#125;);<br>            <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>        &#125;<br>    &#125;<br>    callHandlerAdded0(newCtx);<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上面的<code>addLast()</code>方法中，首先检查<code>ChannelHandler </code>的名字是否是重复，如果不重复，则调用<code>newContex()</code>方法为这个handler创建一个对应的<code>DefaultChannelHandlerContext</code>实例，并与之关联起来(Context 中有一个handler 属性保存着对应的Handler 实例)。为了添加一个handler到pipeline 中，必须把此handler 包装成<code>ChannelHandlerContext</code>。因此在上面的代码中我们可以看到新实例化了一个newCtx 对象，并将handler 作为参数传递到构造方法中</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java">DefaultChannelHandlerContext(DefaultChannelPipeline pipeline, EventExecutor executor, String name, ChannelHandler handler) &#123;<br>    <span class="hljs-built_in">super</span>(pipeline, executor, name, isInbound(handler), isOutbound(handler));<br>    <span class="hljs-keyword">if</span> (handler == <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">NullPointerException</span>(<span class="hljs-string">&quot;handler&quot;</span>);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">this</span>.handler = handler;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在<code>DefaultChannelHandlerContext </code>的构造器中，调用了两个很有意思的方法：<code>isInbound()</code>与<code>isOutbound()</code></p>
+<p>当一个handler 实现了<code>ChannelInboundHandler </code>接口，则<code>isInbound </code>返回true；类似地，当一个handler 实现了<code>ChannelOutboundHandler </code>接口，则<code>isOutbound </code>就返回true。而这两个boolean 变量会传递到父类<code>AbstractChannelHandlerContext </code>中，并初始化父类的两个字段：<code>inbound </code>与<code>outbound</code></p>
+<p><code>ChannelInitializer </code>仅仅实现了<code>ChannelInboundHandler </code>接口，因此这里实例化的<code>DefaultChannelHandlerContext</code>的inbound为true，outbound为false。当<code>Context</code>创建完成后，执行<code>addLast0()</code>方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">addLast0</span><span class="hljs-params">(AbstractChannelHandlerContext newCtx)</span> &#123;<br>    <span class="hljs-type">AbstractChannelHandlerContext</span> <span class="hljs-variable">prev</span> <span class="hljs-operator">=</span> <span class="hljs-built_in">this</span>.tail.prev;<br>    newCtx.prev = prev;<br>    newCtx.next = <span class="hljs-built_in">this</span>.tail;<br>    prev.next = newCtx;<br>    <span class="hljs-built_in">this</span>.tail.prev = newCtx;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>添加完成后，此时双向链表<code>ContextHead&lt;--&gt;ChannelInitializer&lt;--&gt;ContextTail</code></p>
+<h3 id="自定义ChannelHandler的添加"><a href="#自定义ChannelHandler的添加" class="headerlink" title="自定义ChannelHandler的添加"></a>自定义ChannelHandler的添加</h3><p>自定义的<code>ChannelHandler</code>在<code>ChannelInitializer</code>被调用时添加，因此需要探究<code>ChannelInitializer</code>在哪里被调用</p>
+<p>回顾<code>Channel</code>的注册过程：</p>
+<ol>
+<li>首先在<code>AbstractBootstrap </code>的<code>initAndRegister()</code>中，通过<code>group().register(channel)</code>，调用<code>MultithreadEventLoopGroup .register()</code>方法。</li>
+<li>在<code>MultithreadEventLoopGroup.register()</code>中调用<code>next()</code>获取一个可用的<code>SingleThreadEventLoop</code>，然后调用它的<code>register()</code>方法。</li>
+<li>在<code>SingleThreadEventLoop.register()</code>方法中，通过<code>channel.unsafe().register(this, promise)</code>方法获取<code>channel</code>的<code>unsafe()</code>底层IO 操作对象，然后调用它的<code>register()</code>。</li>
+<li>在<code>AbstractUnsafe.register()</code>方法中，调用<code>register0()</code>方法注册<code>Channel</code>对象。</li>
+<li>在<code>AbstractUnsafe.register0()</code>方法中，调用<code>AbstractNioChannel.doRegister()</code>方法。</li>
+<li><code>AbstractNioChannel.doRegister()</code>方法调用<code>javaChannel().register(eventLoop().selector, 0, this)</code>将<code>Channel</code>对应的Java NIO 的<code>SockerChannel</code>对象注册到一个<code>eventLoop</code>的<code>Selector</code>中，并且将当前<code>Channel</code>作为<code>attachment</code>。</li>
+</ol>
+<p>而我们自定义<code>ChannelHandler</code>的添加过程，发生在<code>AbstractUnsafe.register0()</code>方法中，在这个方法中调用了<code>pipeline.fireChannelRegistered()</code>方法，其代码实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">register0</span><span class="hljs-params">(ChannelPromise promise)</span> &#123;<br>        <span class="hljs-type">boolean</span> <span class="hljs-variable">firstRegistration</span> <span class="hljs-operator">=</span> <span class="hljs-built_in">this</span>.neverRegistered;<br>        AbstractChannel.<span class="hljs-built_in">this</span>.doRegister();<br>        <span class="hljs-built_in">this</span>.neverRegistered = <span class="hljs-literal">false</span>;<br>        AbstractChannel.<span class="hljs-built_in">this</span>.registered = <span class="hljs-literal">true</span>;<br>        AbstractChannel.<span class="hljs-built_in">this</span>.pipeline.invokeHandlerAddedIfNeeded();<br>        <span class="hljs-built_in">this</span>.safeSetSuccess(promise);<br>        AbstractChannel.<span class="hljs-built_in">this</span>.pipeline.fireChannelRegistered();<br>&#125;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelPipeline <span class="hljs-title function_">fireChannelRegistered</span><span class="hljs-params">()</span> &#123;<br>        AbstractChannelHandlerContext.invokeChannelRegistered(<span class="hljs-built_in">this</span>.head);<br>        <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>再看<code>AbstractChannelHandlerContext</code>的<code>invokeChannelRegistered()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">invokeChannelRegistered</span><span class="hljs-params">(<span class="hljs-keyword">final</span> AbstractChannelHandlerContext next)</span> &#123;<br>    <span class="hljs-comment">// 从head开始遍历双向链表</span><br>    <span class="hljs-type">EventExecutor</span> <span class="hljs-variable">executor</span> <span class="hljs-operator">=</span> next.executor();<br>    <span class="hljs-keyword">if</span> (executor.inEventLoop()) &#123;<br>        next.invokeChannelRegistered();<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        executor.execute(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Runnable</span>() &#123;<br>            <span class="hljs-meta">@Override</span><br>            <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> &#123;<br>                next.invokeChannelRegistered();<br>            &#125;<br>        &#125;);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>从head 开始遍历Pipeline 的双向链表，然后<code>findContextInbound()</code>找到第一个属性<code>inbound</code>为true 的<code>ChannelHandlerContext</code>实例</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelRegistered</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>    DefaultChannelPipeline.<span class="hljs-built_in">this</span>.invokeHandlerAddedIfNeeded();<br>    ctx.fireChannelRegistered();<br>&#125;<br><span class="hljs-keyword">public</span> ChannelHandlerContext <span class="hljs-title function_">fireChannelRegistered</span><span class="hljs-params">()</span> &#123;<br>    invokeChannelRegistered(<span class="hljs-built_in">this</span>.findContextInbound());<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>当获取到inbound 的Context 后，就调用它的<code>invokeChannelRegistered()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">invokeChannelRegistered</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">this</span>.invokeHandler()) &#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            ((ChannelInboundHandler)<span class="hljs-built_in">this</span>.handler()).channelRegistered(<span class="hljs-built_in">this</span>);<br>        &#125; <span class="hljs-keyword">catch</span> (Throwable var2) &#123;<br>            <span class="hljs-built_in">this</span>.notifyHandlerException(var2);<br>        &#125;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">this</span>.fireChannelRegistered();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这里<code>handler()</code>返回的对象其实就是一开始我们实例化的<code>ChannelInitializer</code>对象，并接着调用了<code>ChannelInitializer</code>的<code>channelRegistered()</code>方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">abstract</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">ChannelInitializer</span>&lt;C <span class="hljs-keyword">extends</span> <span class="hljs-title class_">Channel</span>&gt; <span class="hljs-keyword">extends</span> <span class="hljs-title class_">ChannelInboundHandlerAdapter</span> &#123;<br>　　<span class="hljs-keyword">protected</span> <span class="hljs-keyword">abstract</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">initChannel</span><span class="hljs-params">(C ch)</span> <span class="hljs-keyword">throws</span> Exception;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-meta">@SuppressWarnings(&quot;unchecked&quot;)</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelRegistered</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>        <span class="hljs-keyword">if</span> (initChannel(ctx)) &#123;<br>            ctx.pipeline().fireChannelRegistered();<br>            removeState(ctx);<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            ctx.fireChannelRegistered();<br>        &#125;<br>    &#125;<br>    <span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-title function_">initChannel</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>        <span class="hljs-keyword">if</span> (initMap.add(ctx)) &#123; <span class="hljs-comment">// Guard against re-entrance.</span><br>            <span class="hljs-keyword">try</span> &#123;<br>                initChannel((C) ctx.channel());<br>            &#125; <span class="hljs-keyword">catch</span> (Throwable cause) &#123;<br>                exceptionCaught(ctx, cause);<br>            &#125; <span class="hljs-keyword">finally</span> &#123;<br>                <span class="hljs-type">ChannelPipeline</span> <span class="hljs-variable">pipeline</span> <span class="hljs-operator">=</span> ctx.pipeline();<br>                <span class="hljs-keyword">if</span> (pipeline.context(<span class="hljs-built_in">this</span>) != <span class="hljs-literal">null</span>) &#123;<br>                    pipeline.remove(<span class="hljs-built_in">this</span>);<br>                &#125;<br>            &#125;<br>            <span class="hljs-keyword">return</span> <span class="hljs-literal">true</span>;<br>        &#125;<br>        <span class="hljs-keyword">return</span> <span class="hljs-literal">false</span>;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><code>initChannel((C) ctx.channel())</code>就是我们在初始化<code>Bootstrap</code>时，调用<code>handler</code>方法传入的匿名内部类所实现的方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">initChannel</span><span class="hljs-params">(SocketChannel ch)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>    <span class="hljs-type">ChannelPipeline</span> <span class="hljs-variable">pipeline</span> <span class="hljs-operator">=</span> ch.pipeline();<br>    pipeline.addLast(<span class="hljs-string">&quot;handler&quot;</span>, <span class="hljs-keyword">new</span> <span class="hljs-title class_">MyClient</span>());<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>当调用这个方法之后, 我们自定义的<code>ChannelHandler</code>就插入到了<code>Pipeline</code></p>
+<p>此时双向链表：<code>ContextHead&lt;--&gt;ChannelInitializer&lt;--&gt;MyHandler&lt;--&gt;ContextTail</code></p>
+<p>当添加完成自定义的<code>ChannelHandler</code>后，在finally代码块会删除自定义的<code>ChannelInitializer</code>，也就是<code>remove(ctx)</code>最终调用<code>ctx.pipeline().remove(this)</code></p>
+<p>此时双向链表：<code>ContextHead&lt;--&gt;MyHandler&lt;--&gt;ContextTail</code></p>
+<p>Context节点添加完毕回调Handler方法<code>callHandlerAdded0()</code></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">callHandlerAdded0</span><span class="hljs-params">(<span class="hljs-keyword">final</span> AbstractChannelHandlerContext ctx)</span> &#123;<br>    <span class="hljs-keyword">try</span> &#123;<br>        ctx.handler().handlerAdded(ctx);<br>        ctx.setAddComplete();<br>    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;<br>        ...<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Handler可以重写<code>handlerAdded</code>方法在Handler被添加成功后 执行部分操作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">DemoHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">SimpleChannelInboundHandler</span>&lt;...&gt; &#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">handlerAdded</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>        <span class="hljs-comment">// 节点被添加完毕之后回调到此</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>接下来，设置该节点的状态</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">final</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">setAddComplete</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">for</span> (;;) &#123;<br>        <span class="hljs-type">int</span> <span class="hljs-variable">oldState</span> <span class="hljs-operator">=</span> handlerState;<br>        <span class="hljs-keyword">if</span> (oldState == REMOVE_COMPLETE || HANDLER_STATE_UPDATER.compareAndSet(<span class="hljs-built_in">this</span>, oldState, ADD_COMPLETE)) &#123;<br>            <span class="hljs-keyword">return</span>;<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>用CAS修改节点的状态至REMOVE_COMPLETE(说明该节点已经被移除)或者ADD_COMPLETE(说明节点已被添加)</p>
+<h2 id="删除节点"><a href="#删除节点" class="headerlink" title="删除节点"></a>删除节点</h2><p>Netty有个最大的特性之一就是Handler可插拔做到动态编织Pipeline，比如在首次建立连接的时候需要通过进行权限认证，在认证通过之后就可以将此Context移除，下次Pipeline在传播事件的时候就就不会调用到权限认证处理器</p>
+<p>下面是权限认证Handler最简单的实现，第一个数据包传来的是认证信息，如果校验通过就删除此Handler，否则直接关闭连接</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">AuthHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">SimpleChannelInboundHandler</span>&lt;ByteBuf&gt; &#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">protected</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelRead0</span><span class="hljs-params">(ChannelHandlerContext ctx, ByteBuf data)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>        <span class="hljs-keyword">if</span> (verify(authDataPacket)) &#123;<br>            ctx.pipeline().remove(<span class="hljs-built_in">this</span>);<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            ctx.close();<br>        &#125;<br>    &#125;<br><br>    <span class="hljs-keyword">private</span> <span class="hljs-type">boolean</span> <span class="hljs-title function_">verify</span><span class="hljs-params">(ByteBuf byteBuf)</span> &#123;<br>        <span class="hljs-comment">// ...</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>重点就在ctx.pipeline().remove(this)这段代码</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelPipeline <span class="hljs-title function_">remove</span><span class="hljs-params">(ChannelHandler handler)</span> &#123;<br>    remove(getContextOrDie(handler));<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>remove操作可以分为如下三个步骤</p>
+<ol>
+<li>找到待删除的节点</li>
+<li>调整双向链表指针删除节点</li>
+<li>Context节点删除完毕回调Handler方法</li>
+</ol>
+<h3 id="找到待删除的节点"><a href="#找到待删除的节点" class="headerlink" title="找到待删除的节点"></a>找到待删除的节点</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> AbstractChannelHandlerContext <span class="hljs-title function_">getContextOrDie</span><span class="hljs-params">(String name)</span> &#123;<br>    <span class="hljs-type">AbstractChannelHandlerContext</span> <span class="hljs-variable">ctx</span> <span class="hljs-operator">=</span> (AbstractChannelHandlerContext) context(name);<br>    <span class="hljs-keyword">if</span> (ctx == <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">NoSuchElementException</span>(name);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-keyword">return</span> ctx;<br>    &#125;<br>&#125;<br><br><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelHandlerContext <span class="hljs-title function_">context</span><span class="hljs-params">(ChannelHandler handler)</span> &#123;<br>    <span class="hljs-keyword">if</span> (handler == <span class="hljs-literal">null</span>) &#123;<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">NullPointerException</span>(<span class="hljs-string">&quot;handler&quot;</span>);<br>    &#125;<br><br>    <span class="hljs-type">AbstractChannelHandlerContext</span> <span class="hljs-variable">ctx</span> <span class="hljs-operator">=</span> head.next;<br>    <span class="hljs-keyword">for</span> (;;) &#123;<br><br>        <span class="hljs-keyword">if</span> (ctx == <span class="hljs-literal">null</span>) &#123;<br>            <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;<br>        &#125;<br><br>        <span class="hljs-keyword">if</span> (ctx.handler() == handler) &#123;<br>            <span class="hljs-keyword">return</span> ctx;<br>        &#125;<br><br>        ctx = ctx.next;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>通过遍历链表方式根据Handler找到对应的Context节点(判断依据 &#x3D;&gt; Context的Handler和当前Handler相同)</p>
+<h3 id="调整双向链表指针删除节点"><a href="#调整双向链表指针删除节点" class="headerlink" title="调整双向链表指针删除节点"></a>调整双向链表指针删除节点</h3><figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> AbstractChannelHandlerContext <span class="hljs-title function_">remove</span><span class="hljs-params">(<span class="hljs-keyword">final</span> AbstractChannelHandlerContext ctx)</span> &#123;<br>    <span class="hljs-comment">// 头结点和为节点不能删除</span><br>    <span class="hljs-keyword">assert</span> ctx != head &amp;&amp; ctx != tail;<br><br>    <span class="hljs-keyword">synchronized</span> (<span class="hljs-built_in">this</span>) &#123;<br>        <span class="hljs-comment">// 调整双向链表指针删除节点</span><br>        remove0(ctx);<br><br>        <span class="hljs-comment">// 如果channel没有与eventloop绑定</span><br>        <span class="hljs-comment">// 则创建一个任务 这个任务会在channel被register的时候调用</span><br>        <span class="hljs-keyword">if</span> (!registered) &#123;<br>            callHandlerCallbackLater(ctx, <span class="hljs-literal">false</span>);<br>            <span class="hljs-keyword">return</span> ctx;<br>        &#125;<br><br>        <span class="hljs-comment">// 回调用户函数</span><br>        <span class="hljs-type">EventExecutor</span> <span class="hljs-variable">executor</span> <span class="hljs-operator">=</span> ctx.executor();<br>        <span class="hljs-keyword">if</span> (!executor.inEventLoop()) &#123;<br>            executor.execute(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Runnable</span>() &#123;<br>                <span class="hljs-meta">@Override</span><br>                <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> &#123;<br>                    callHandlerRemoved0(ctx);<br>                &#125;<br>            &#125;);<br>            <span class="hljs-keyword">return</span> ctx;<br>        &#125;<br>    &#125;<br>    callHandlerRemoved0(ctx);<br>    <span class="hljs-keyword">return</span> ctx;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>删除节点是通过remove0方法实现的，代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">remove0</span><span class="hljs-params">(AbstractChannelHandlerContext ctx)</span> &#123;<br>    <span class="hljs-type">AbstractChannelHandlerContext</span> <span class="hljs-variable">prev</span> <span class="hljs-operator">=</span> ctx.prev;<br>    <span class="hljs-type">AbstractChannelHandlerContext</span> <span class="hljs-variable">next</span> <span class="hljs-operator">=</span> ctx.next;<br>    prev.next = next;<br>    next.prev = prev;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="Context节点删除完毕回调Handler方法"><a href="#Context节点删除完毕回调Handler方法" class="headerlink" title="Context节点删除完毕回调Handler方法"></a>Context节点删除完毕回调Handler方法</h3><p>回调用户方法逻辑在<code>callHandlerRemoved0()</code>方法中完成，代码如下</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">callHandlerRemoved0</span><span class="hljs-params">(<span class="hljs-keyword">final</span> AbstractChannelHandlerContext ctx)</span> &#123;<br>    <span class="hljs-keyword">try</span> &#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            ctx.handler().handlerRemoved(ctx);<br>        &#125; <span class="hljs-keyword">finally</span> &#123;<br>            ctx.setRemoved();<br>        &#125;<br>    &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;<br>        fireExceptionCaught(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ChannelPipelineException</span>(ctx.handler().getClass().getName() + <span class="hljs-string">&quot;.handlerRemoved() has thrown an exception.&quot;</span>, t));<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Handler可以重写<code>handlerRemoved</code>方法在Handler被删除成功后 执行部分操作</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">DemoHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">SimpleChannelInboundHandler</span>&lt;...&gt; &#123;<br>    <span class="hljs-meta">@Override</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">handlerRemoved</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>        <span class="hljs-comment">// 节点被删除完毕之后回调到此</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>最后将该节点的状态设置为removed</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">final</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">setRemoved</span><span class="hljs-params">()</span> &#123;<br>    handlerState = REMOVE_COMPLETE;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>至此Pipeline添加节点的删除就完成了，其他的removeXXX方法原理类似</p>
+<h2 id="事件传播"><a href="#事件传播" class="headerlink" title="事件传播"></a>事件传播</h2><p><code>AbstractChannelHandlerContext</code>中有<code>inbound</code>和<code>outbound</code>两个boolean 变量，分别用于标识Context 所对应的handler的类型，即：</p>
+<ol>
+<li><code>inbound</code>为true 是,表示其对应的<code>ChannelHandler</code>是<code>ChannelInboundHandler</code>的子类。</li>
+<li><code>outbound</code>为true 时，表示对应的<code>ChannelHandler</code>是<code>ChannelOutboundHandler</code>的子类。</li>
+</ol>
+<p>Netty 中的传播事件可以分为两种：Inbound 事件和Outbound 事件。如下是从Netty 官网针对这两个事件的说明：</p>
+<img src="/2021/08/17/Netty%E6%BA%90%E7%A0%81-Pipline/image-20210817215001322.png" srcset="/img/loading.gif" lazyload class="" title="image-20210817215001322">
+
+<p>从上图可以看出，<code>inbound</code>事件和<code>outbound</code>事件的流向是不一样的，<code>inbound</code>事件的流行是从下至上，而<code>outbound</code>刚好相反，是从上到下。并且<code>inbound</code>的传递方式是通过调用相应的<code>ChannelHandlerContext.fireIN_EVT()</code>方法，而<code>outbound</code>方法的的传递方式是通过调用<code>ChannelHandlerContext.OUT_EVT()</code>方法。例如：<code>ChannelHandlerContext</code>的<code>fireChannelRegistered()</code>调用会发送一个<code>ChannelRegistered</code>的<code>inbound</code>给下一个<code>ChannelHandlerContext</code>，而<code>ChannelHandlerContext</code>的<code>bind()</code>方法调用时会发送一个<code>bind</code>的<code>outbound</code>事件给下一个<code>ChannelHandlerContext</code>。</p>
+<p><strong>Inbound 事件传播方法有</strong>：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">ChannelInboundHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">ChannelHandler</span> &#123;<br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelRegistered</span><span class="hljs-params">(ChannelHandlerContext var1)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelUnregistered</span><span class="hljs-params">(ChannelHandlerContext var1)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelActive</span><span class="hljs-params">(ChannelHandlerContext var1)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelInactive</span><span class="hljs-params">(ChannelHandlerContext var1)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelRead</span><span class="hljs-params">(ChannelHandlerContext var1, Object var2)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelReadComplete</span><span class="hljs-params">(ChannelHandlerContext var1)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">userEventTriggered</span><span class="hljs-params">(ChannelHandlerContext var1, Object var2)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelWritabilityChanged</span><span class="hljs-params">(ChannelHandlerContext var1)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">exceptionCaught</span><span class="hljs-params">(ChannelHandlerContext var1, Throwable var2)</span> <span class="hljs-keyword">throws</span> Exception;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Outbound 事件传播方法有：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">interface</span> <span class="hljs-title class_">ChannelOutboundHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">ChannelHandler</span> &#123;<br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">bind</span><span class="hljs-params">(ChannelHandlerContext var1, SocketAddress var2, ChannelPromise var3)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">connect</span><span class="hljs-params">(ChannelHandlerContext var1, SocketAddress var2, SocketAddress var3, ChannelPromise var4)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">disconnect</span><span class="hljs-params">(ChannelHandlerContext var1, ChannelPromise var2)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">close</span><span class="hljs-params">(ChannelHandlerContext var1, ChannelPromise var2)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">deregister</span><span class="hljs-params">(ChannelHandlerContext var1, ChannelPromise var2)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">read</span><span class="hljs-params">(ChannelHandlerContext var1)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">write</span><span class="hljs-params">(ChannelHandlerContext var1, Object var2, ChannelPromise var3)</span> <span class="hljs-keyword">throws</span> Exception;<br><br>    <span class="hljs-keyword">void</span> <span class="hljs-title function_">flush</span><span class="hljs-params">(ChannelHandlerContext var1)</span> <span class="hljs-keyword">throws</span> Exception;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>inbound 类似于是事件回调（响应请求的事件），而outbound 类似于主动触发（发起请求的事件）</p>
+<p>如果我们捕获了一个事件，并且想让这个事件继续传递下去，那么需要调用Context 对应的传播方法 fireXXX</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">MyInboundHandler</span> <span class="hljs-keyword">extends</span> <span class="hljs-title class_">ChannelInboundHandlerAdapter</span> &#123;<br>　　<span class="hljs-meta">@Override</span><br>　　<span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>　　　　System.out.println(<span class="hljs-string">&quot;连接成功&quot;</span>);<br>　　　　ctx.fireChannelActive();<br>　　&#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="outbound事件传播方式"><a href="#outbound事件传播方式" class="headerlink" title="outbound事件传播方式"></a>outbound事件传播方式</h3><p><code>Outbound</code>事件都是请求事件(request event)，即请求某件事情的发生，然后通过<code>Outbound</code>事件进行通知。<code>Outbound</code>事件的传播方向是<code>tail -&gt; customContext -&gt; head</code>。</p>
+<p>我们接下来以<code>connect</code>事件为例，分析一下<code>Outbound</code>事件的传播机制。首先，当用户调用了<code>Bootstrap.connect()</code>方法时，就会触发一个<code>Connect</code>请求事件，我们就发现<code>AbstractChannel.connect()</code>其实由调用了<code>DefaultChannelPipeline.connect()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> ChannelFuture <span class="hljs-title function_">connect</span><span class="hljs-params">(SocketAddress remoteAddress)</span> &#123;<br>    <span class="hljs-keyword">return</span> pipeline.connect(remoteAddress);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>而<code>pipeline.connect()</code>方法的实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelFuture <span class="hljs-title function_">connect</span><span class="hljs-params">(SocketAddress remoteAddress)</span> &#123;<br>    <span class="hljs-keyword">return</span> tail.connect(remoteAddress);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>可以看到，当<code>outbound</code>事件(这里是connect 事件)传递到<code>Pipeline</code>后，它其实是以tail 为起点开始传播的。而<code>tail.connect()</code>其实调用的是<code>AbstractChannelHandlerContext.connect()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> ChannelFuture <span class="hljs-title function_">connect</span><span class="hljs-params">(<span class="hljs-keyword">final</span> SocketAddress remoteAddress, <span class="hljs-keyword">final</span> SocketAddress localAddress, <span class="hljs-keyword">final</span> ChannelPromise promise)</span> &#123;<br>    <span class="hljs-keyword">final</span> <span class="hljs-type">AbstractChannelHandlerContext</span> <span class="hljs-variable">next</span> <span class="hljs-operator">=</span> findContextOutbound(MASK_CONNECT);<br>    <span class="hljs-type">EventExecutor</span> <span class="hljs-variable">executor</span> <span class="hljs-operator">=</span> next.executor();<br>    <span class="hljs-keyword">if</span> (executor.inEventLoop()) &#123;<br>        next.invokeConnect(remoteAddress, localAddress, promise);<span class="hljs-keyword">return</span> promise;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><code>findContextOutbound()</code>的作用是以当前<code>Context</code>为起点，向<code>Pipeline</code>中的<code>Context</code>双向链表的前端寻找第一个<code>outbound</code>属性为true 的<code>Context</code>（即关联<code>ChannelOutboundHandler</code>的<code>Context</code>），然后返回。<code>findContextOutbound()</code>方法代码实现如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> AbstractChannelHandlerContext <span class="hljs-title function_">findContextOutbound</span><span class="hljs-params">(<span class="hljs-type">int</span> mask)</span> &#123;<br>    <span class="hljs-type">AbstractChannelHandlerContext</span> <span class="hljs-variable">ctx</span> <span class="hljs-operator">=</span> <span class="hljs-built_in">this</span>;<br>    <span class="hljs-keyword">do</span> &#123;<br>        ctx = ctx.prev;<br>    &#125; <span class="hljs-keyword">while</span> ((ctx.executionMask &amp; mask) == <span class="hljs-number">0</span>);<br>    <span class="hljs-keyword">return</span> ctx;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>当我们找到了一个<code>outbound</code>的<code>Context</code>后，就调用它的<code>invokeConnect()</code>方法，这个方法中会调用<code>Context</code>其关联的<code>ChannelHandler</code>的<code>connect()</code>方法</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">invokeConnect</span><span class="hljs-params">(SocketAddress remoteAddress, SocketAddress localAddress, ChannelPromise promise)</span> &#123;<br>    <span class="hljs-keyword">if</span> (invokeHandler()) &#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            ((ChannelOutboundHandler) handler()).connect(<span class="hljs-built_in">this</span>, remoteAddress, localAddress, promise);<br>        &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;<br>            notifyOutboundHandlerException(t, promise);<br>        &#125;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        connect(remoteAddress, localAddress, promise);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>如果用户没有重写<code>ChannelHandler</code>的<code>connect()</code>方法，那么会调用<code>ChannelOutboundHandlerAdapter</code>的<code>connect()</code>实现：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">connect</span><span class="hljs-params">(ChannelHandlerContext ctx, SocketAddress remoteAddress,SocketAddress localAddress, ChannelPromise promise)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>    ctx.connect(remoteAddress, localAddress, promise);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><code>ChannelOutboundHandlerAdapter</code>的<code>connect()</code>仅仅调用了<code>ctx.connect()</code>，而这个调用又回到了：<code>Context.connect -&gt; Connect.findContextOutbound -&gt; next.invokeConnect -&gt; handler.connect -&gt; Context.connect</code>这样的循环中，直到<code>connect</code>事件传递到<code>DefaultChannelPipeline</code>的双向链表的头节点，即head 中</p>
+<p>head 实现了<code>ChannelOutboundHandler</code>，因此它的<code>outbound</code>属性是true。因为head 本身既是一个<code>ChannelHandlerContext</code>，又实现了<code>ChannelOutboundHandler</code>接口，因此当<code>connect()</code>消息传递到head 后，会将消息转递到对应的<code>ChannelHandler</code>中处理，而head 的<code>handler()</code>方法返回的就是head 本身：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> ChannelHandler <span class="hljs-title function_">handler</span><span class="hljs-params">()</span> &#123;<br>      <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>因此最终<code>connect()</code>事件是在head 中被处理。head 的<code>connect()</code>事件处理逻辑如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">connect</span><span class="hljs-params">(</span><br><span class="hljs-params">    ChannelHandlerContext ctx,</span><br><span class="hljs-params">    SocketAddress remoteAddress, SocketAddress localAddress,</span><br><span class="hljs-params">    ChannelPromise promise)</span> &#123;<br>    unsafe.connect(remoteAddress, localAddress, promise);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="inbound事件传播方式"><a href="#inbound事件传播方式" class="headerlink" title="inbound事件传播方式"></a>inbound事件传播方式</h3><p><code>Inbound</code>事件和<code>Outbound</code>事件的处理过程是类似的，只是传播方向不同。<code>Inbound</code>事件是一个通知事件,即某件事已经发生了,然后通过<code>Inbound</code>事件进行通知。<code>Inbound</code>通常发生在<code>Channel</code>的状态的改变或IO 事件就绪。</p>
+<p><code>Inbound</code>的特点是它传播方向是<code>head -&gt; customContext -&gt; tail</code>。接下来分析<code>connect()</code>事件后会发生什么<code>Inbound</code>事件，并最终找到<code>Outbound</code>和<code>Inbound</code>事件之间的联系。当<code>connect()</code>这个<code>Outbound</code>传播到<code>unsafe</code>后，其实是在<code>AbstractNioUnsafe</code>的<code>connect()</code>方法中进行处理的：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">connect</span><span class="hljs-params">(<span class="hljs-keyword">final</span> SocketAddress remoteAddress, <span class="hljs-keyword">final</span> SocketAddress localAddress, <span class="hljs-keyword">final</span> ChannelPromise promise)</span> &#123;<br>    <span class="hljs-type">boolean</span> <span class="hljs-variable">wasActive</span> <span class="hljs-operator">=</span> isActive();<br>    <span class="hljs-keyword">if</span> (doConnect(remoteAddress, localAddress)) &#123;<br>        fulfillConnectPromise(promise, wasActive);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在<code>AbstractNioUnsafe</code>的<code>connect()</code>方法中，首先调用<code>doConnect()</code>方法进行实际上的Socket 连接，当连接上后会调用<code>fulfillConnectPromise()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">fulfillConnectPromise</span><span class="hljs-params">(ChannelPromise promise, <span class="hljs-type">boolean</span> wasActive)</span> &#123;<br>    <span class="hljs-keyword">if</span> (!wasActive &amp;&amp; active) &#123;<br>        pipeline().fireChannelActive();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在<code>fulfillConnectPromise()</code>中，会通过调用<code>pipeline().fireChannelActive()</code>方法将通道激活的消息(即Socket 连接成功)发送出去。而这里，当调用<code>pipeline.fireXXX</code> 后，就是<code>Inbound</code>事件的起点。因此当调用<code>pipeline().fireChannelActive()</code>后，就产生了一个<code>ChannelActive Inbound</code>事件</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ChannelPipeline <span class="hljs-title function_">fireChannelActive</span><span class="hljs-params">()</span> &#123;<br>    AbstractChannelHandlerContext.invokeChannelActive(head);<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>在<code>fireChannelActive()</code>方法中，调用的是<code>head.invokeChannelActive()</code>，因此可以证明<code>Inbound</code>事件在<code>Pipeline</code>中传输的起点是head</strong></p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">static</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">invokeChannelActive</span><span class="hljs-params">(<span class="hljs-keyword">final</span> AbstractChannelHandlerContext next)</span> &#123;<br>    <span class="hljs-type">EventExecutor</span> <span class="hljs-variable">executor</span> <span class="hljs-operator">=</span> next.executor();<br>    <span class="hljs-keyword">if</span> (executor.inEventLoop()) &#123;<br>        next.invokeChannelActive();<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        executor.execute(<span class="hljs-keyword">new</span> <span class="hljs-title class_">Runnable</span>() &#123;<br>            <span class="hljs-meta">@Override</span><br>            <span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">run</span><span class="hljs-params">()</span> &#123;<br>                next.invokeChannelActive();<br>            &#125;<br>        &#125;);<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>接下来的调用流程：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">invokeChannelActive</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">if</span> (<span class="hljs-built_in">this</span>.invokeHandler()) &#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            ((ChannelInboundHandler)<span class="hljs-built_in">this</span>.handler()).channelActive(<span class="hljs-built_in">this</span>);<br>        &#125; <span class="hljs-keyword">catch</span> (Throwable var2) &#123;<br>            <span class="hljs-built_in">this</span>.notifyHandlerException(var2);<br>        &#125;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-built_in">this</span>.fireChannelActive();<br>    &#125;<br><br>&#125;<br><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>    ctx.fireChannelActive();<br>    <span class="hljs-built_in">this</span>.readIfIsAutoRead();<br>&#125;<br><span class="hljs-keyword">public</span> ChannelHandlerContext <span class="hljs-title function_">fireChannelActive</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-type">AbstractChannelHandlerContext</span> <span class="hljs-variable">next</span> <span class="hljs-operator">=</span> <span class="hljs-built_in">this</span>.findContextInbound();<br>    invokeChannelActive(next);<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<ol>
+<li>首先调用<code>findContextInbound()</code>，从Pipeline 的双向链表中中找到第一个属性<code>inbound</code>为true 的<code>Context</code>，然后将其返回。</li>
+<li>调用<code>Context</code>的<code>invokeChannelActive()</code>方法.</li>
+</ol>
+<p><code>invokeChannelActive()</code>方法源码如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">private</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">invokeChannelActive</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">if</span> (invokeHandler()) &#123;<br>        <span class="hljs-keyword">try</span> &#123;<br>            ((ChannelInboundHandler) handler()).channelActive(<span class="hljs-built_in">this</span>);<br>        &#125; <span class="hljs-keyword">catch</span> (Throwable t) &#123;<br>            notifyHandlerException(t);<br>        &#125;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        fireChannelActive();<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>如果用户没有重写<code>channelActive() </code>方法，那就会调用<code>ChannelInboundHandlerAdapter</code>的<code>channelActive()</code>方法：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">void</span> <span class="hljs-title function_">channelActive</span><span class="hljs-params">(ChannelHandlerContext ctx)</span> <span class="hljs-keyword">throws</span> Exception &#123;<br>    ctx.fireChannelActive();<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>同样地, 在<code>ChannelInboundHandlerAdapte</code>的<code>channelActive()</code>中，仅仅调用了<code>ctx.fireChannelActive()</code>方法，因此就会进入<code>Context.fireChannelActive() -&gt; Connect.findContextInbound() -&gt; nextContext.invokeChannelActive() -&gt;nextHandler.channelActive() -&gt; nextContext.fireChannelActive()</code>这样的循环中。</p>
+<p>同理，tail 本身既实现了<code>ChannelInboundHandler</code>接口，又实现了<code>ChannelHandlerContext</code>接口，因此当<code>channelActive()</code>消息传递到tail 后，会将消息转递到对应的<code>ChannelHandler</code>中处理，而tail 的<code>handler()</code>返回的就是tail 本身：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> ChannelHandler <span class="hljs-title function_">handler</span><span class="hljs-params">()</span> &#123;<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">this</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>因此<code>channelActive Inbound</code>事件最终是在tail 中处理的，我们看一下它的处理方法：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs java\">public void channelActive(ChannelHandlerContext ctx) throws Exception &#123;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><code>TailContext</code>的<code>channelActive()</code>方法是空的。其实<code>TailContext</code>的<code>Inbound</code>处理方法的实现都是空的。可见，如果是<code>Inbound</code>,当用户没有实现自定义的处理器时，那么默认是不处理的。</p>
+<h3 id="事件传播机制总结"><a href="#事件传播机制总结" class="headerlink" title="事件传播机制总结"></a>事件传播机制总结</h3><p><strong>Outbound 事件总结:</strong></p>
+<p>Outbound 事件是请求事件（由connect()发起一个请求，并最终由unsafe 处理这个请求）。</p>
+<p>Outbound 事件的发起者是<code>Channel</code>。</p>
+<p>Outbound 事件的处理者是<code>unsafe</code>。</p>
+<p>Outbound 事件在<code>Pipeline</code>中的传输方向是<code>tail -&gt; head</code>。</p>
+<p>在<code>ChannelHandler</code>中处理事件时，如果这个<code>Handler</code>不是最后一个<code>Handler</code>，则需要调用ctx 的方法（如：<code>ctx.connect()</code>方法)将此事件继续传播下去。如果不这样做，那么此事件的传播会提前终止。</p>
+<p>Outbound 事件流：<code>Context.OUT_EVT() -&gt; Connect.findContextOutbound() -&gt; nextContext.invokeOUT_EVT()-&gt; nextHandler.OUT_EVT() -&gt; nextContext.OUT_EVT()</code></p>
+<p><strong>Inbound 事件总结:</strong></p>
+<p>Inbound 事件是通知事件，当某件事情已经就绪后，通知上层。</p>
+<p>Inbound 事件发起者是<code>unsafe</code>。</p>
+<p>Inbound 事件的处理者是<code>Channel</code>，如果用户没有实现自定义的处理方法，那么<code>Inbound</code>事件默认的处理者是<code>TailContext</code>，并且其处理方法是空实现。<code>Inbound</code>事件在<code>Pipeline</code>中传输方向是<code>head -&gt; tail</code>。</p>
+<p>在<code>ChannelHandler</code>中处理事件时，如果这个<code>Handler</code>不是最后一个<code>Handler</code>，则需要调用<code>ctx.fireIN_EVT()</code>事件（如：<code>ctx.fireChannelActive()</code>方法）将此事件继续传播下去。如果不这样做，那么此事件的传播会提前终止。</p>
+<p>Outbound 事件流：<code>Context.fireIN_EVT() -&gt; Connect.findContextInbound() -&gt; nextContext.invokeIN_EVT() -&gt;nextHandler.IN_EVT() -&gt; nextContext.fireIN_EVT()</code></p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Netty/">Netty</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Netty/">Netty</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2021/08/18/Kubernetes-%E4%BB%8B%E7%BB%8D/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Kubernetes-介绍</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2021/08/15/Netty%E6%BA%90%E7%A0%81-%E6%96%B0%E8%BF%9E%E6%8E%A5%E6%8E%A5%E5%85%A5/">
+                        <span class="hidden-mobile">Netty源码-新连接接入</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/tocbot@4.12.3/dist/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4.3.1/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js" ></script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

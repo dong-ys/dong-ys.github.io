@@ -1,0 +1,566 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Dongys">
+  <meta name="keywords" content="">
+  
+  <title>Kubernetes-Service详解 - Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10.7.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"dong-ys.github.io","root":"/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Dongys's Blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('https://picture.zwc365.com/getbing.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Kubernetes-Service详解">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2021-08-23 14:19" pubdate>
+        2021年8月23日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4.1k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      59
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Kubernetes-Service详解</h1>
+            
+            <div class="markdown-body">
+              <h1 id="Kubernetes-Service详解"><a href="#Kubernetes-Service详解" class="headerlink" title="Kubernetes-Service详解"></a>Kubernetes-Service详解</h1><h2 id="1-Service介绍"><a href="#1-Service介绍" class="headerlink" title="1. Service介绍"></a>1. Service介绍</h2><p>在kubernetes中，pod是应用程序的载体，我们可以通过pod的ip来访问应用程序，但是pod的ip地址不是固定的，这也就意味着不方便直接采用pod的ip对服务进行访问。</p>
+<p>为了解决这个问题，kubernetes提供了Service资源，Service会对提供同一个服务的多个pod进行聚合，并且提供一个统一的入口地址。通过访问Service的入口地址就能访问到后面的pod服务。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200408194716912-1626783758946.png" srcset="/img/loading.gif" lazyload class="" title="image-20200408194716912-1626783758946">
+
+<p>Service在很多情况下只是一个概念，真正起作用的其实是kube-proxy服务进程，每个Node节点上都运行着一个kube-proxy服务进程。当创建Service的时候会通过api-server向etcd写入创建的service的信息，而kube-proxy会基于监听的机制发现这种Service的变动，然后<strong>它会将最新的Service信息转换成对应的访问规则</strong>。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200509121254425.png" srcset="/img/loading.gif" lazyload class="" title="image-20200509121254425">
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">10.97.97.97:80 是service提供的访问入口</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">当访问这个入口的时候，可以发现后面有三个pod的服务在等待调用，</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">kube-proxy会基于rr（轮询）的策略，将请求分发到其中一个pod上去</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">这个规则会同时在集群内的所有节点上都生成，所以在任何一个节点上访问都可以。</span><br>[root@master ~]# ipvsadm -Ln<br>IP Virtual Server version 1.2.1 (size=4096)<br>Prot LocalAddress:Port Scheduler Flags<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">RemoteAddress:Port           Forward Weight ActiveConn InActConn</span><br>TCP  172.17.0.1:31884 rr<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.140.99:80             Masq    1      0          0</span>         <br>TCP  192.168.249.100:31884 rr<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.140.99:80             Masq    1      0          0</span><br></code></pre></td></tr></table></figure>
+
+<p>kube-proxy目前支持三种工作模式</p>
+<p><strong>userspace模式</strong></p>
+<p>userspaces模式下，kube-proxy会为每一个Service创建一个监听端口，发向Cluster Ip的请求被Iptables规则重定向到kube-proxy监听的端口上，kube-proxy根据LB算法选择一个提供服务的Pod并和其建立连接，以将请求转发到Pod上。该模式下，kube-proxy充当了一个四层负载均衡器的角色。由于kube-proxy运行在userspace中，在进行转发处理时会增加内核和用户空间之间的数据拷贝，虽然比较稳定，但是效率比较低。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200509151424280.png" srcset="/img/loading.gif" lazyload class="" title="image-20200509151424280">
+
+<p><strong>iptables 模式</strong></p>
+<p>iptables模式下，kube-proxy为service后端的每个Pod创建对应的iptables规则，直接将发向Cluster IP的请求重定向到一个Pod IP。  该模式下kube-proxy不承担四层负责均衡器的角色，只负责创建iptables规则。该模式的优点是较userspace模式效率更高，但不能提供灵活的LB策略，当后端Pod不可用时也无法进行重试。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200509152947714.png" srcset="/img/loading.gif" lazyload class="" title="image-20200509152947714">
+
+<p><strong>ipvs 模式</strong></p>
+<p>ipvs模式和iptables类似，kube-proxy监控Pod的变化并创建相应的ipvs规则。ipvs相对iptables转发效率更高。除此以外，ipvs支持更多的LB算法。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200509153731363-1629700884860.png" srcset="/img/loading.gif" lazyload class="" title="image-20200509153731363">
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">此模式必须安装ipvs内核模块，否则会降级为iptables</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">开启ipvs，修改mode: <span class="hljs-string">&quot;ipvs&quot;</span></span><br>[root@master ~]# kubectl edit cm kube-proxy -n kube-system<br>Edit cancelled, no changes made.<br><br>[root@master ~]# kubectl delete pod -l k8s-app=kube-proxy -n kube-system<br>pod &quot;kube-proxy-lv2rw&quot; deleted<br>pod &quot;kube-proxy-mmlrd&quot; deleted<br>pod &quot;kube-proxy-tvmzr&quot; deleted<br>[root@master ~]# ipvsadm -Ln<br>IP Virtual Server version 1.2.1 (size=4096)<br>Prot LocalAddress:Port Scheduler Flags<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">RemoteAddress:Port           Forward Weight ActiveConn InActConn</span><br>TCP  172.17.0.1:31884 rr<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.140.99:80             Masq    1      0          0</span>         <br>TCP  192.168.249.100:31884 rr<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.140.99:80             Masq    1      0          0</span>         <br>TCP  10.96.0.1:443 rr<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">192.168.249.100:6443         Masq    1      7          0</span>         <br>TCP  10.96.0.10:53 rr<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.219.68:53             Masq    1      0          0</span>         <br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.219.69:53             Masq    1      0          0</span><br></code></pre></td></tr></table></figure>
+
+<h2 id="2-Service类型"><a href="#2-Service类型" class="headerlink" title="2. Service类型"></a>2. Service类型</h2><p>Service的资源清单文件：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span>  <span class="hljs-comment"># 资源类型</span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span>  <span class="hljs-comment"># 资源版本</span><br><span class="hljs-attr">metadata:</span> <span class="hljs-comment"># 元数据</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">service</span> <span class="hljs-comment"># 资源名称</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span> <span class="hljs-comment"># 命名空间</span><br><span class="hljs-attr">spec:</span> <span class="hljs-comment"># 描述</span><br>  <span class="hljs-attr">selector:</span> <span class="hljs-comment"># 标签选择器，用于确定当前service代理哪些pod</span><br>    <span class="hljs-attr">app:</span> <span class="hljs-string">nginx</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-comment"># Service类型，指定service的访问方式</span><br>  <span class="hljs-attr">clusterIP:</span>  <span class="hljs-comment"># 虚拟服务的ip地址</span><br>  <span class="hljs-attr">sessionAffinity:</span> <span class="hljs-comment"># session亲和性，支持ClientIP、None两个选项</span><br>  <span class="hljs-attr">ports:</span> <span class="hljs-comment"># 端口信息</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">protocol:</span> <span class="hljs-string">TCP</span> <br>      <span class="hljs-attr">port:</span> <span class="hljs-number">3017</span>  <span class="hljs-comment"># service端口</span><br>      <span class="hljs-attr">targetPort:</span> <span class="hljs-number">5003</span> <span class="hljs-comment"># pod端口</span><br>      <span class="hljs-attr">nodePort:</span> <span class="hljs-number">31122</span> <span class="hljs-comment"># 主机端口</span><br></code></pre></td></tr></table></figure>
+
+<ul>
+<li>ClusterIP：默认值，它是Kubernetes系统自动分配的虚拟IP，只能在集群内部访问</li>
+<li>NodePort：将Service通过指定的Node上的端口暴露给外部，通过此方法，就可以在集群外部访问服务</li>
+<li>LoadBalancer：使用外接负载均衡器完成到服务的负载分发，注意此模式需要外部云环境支持</li>
+<li>ExternalName： 把集群外部的服务引入集群内部，直接使用</li>
+</ul>
+<h2 id="3-Service使用"><a href="#3-Service使用" class="headerlink" title="3. Service使用"></a>3. Service使用</h2><h3 id="3-1-实验环境准备"><a href="#3-1-实验环境准备" class="headerlink" title="3.1 实验环境准备"></a>3.1 实验环境准备</h3><p>在使用service之前，首先利用Deployment创建出3个pod，注意要为pod设置<code>app=nginx-pod</code>的标签</p>
+<p>创建deployment.yaml，内容如下：</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span>      <br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">pc-deployment</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span> <br>  <span class="hljs-attr">replicas:</span> <span class="hljs-number">3</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">matchLabels:</span><br>      <span class="hljs-attr">app:</span> <span class="hljs-string">nginx-pod</span><br>  <span class="hljs-attr">template:</span><br>    <span class="hljs-attr">metadata:</span><br>      <span class="hljs-attr">labels:</span><br>        <span class="hljs-attr">app:</span> <span class="hljs-string">nginx-pod</span><br>    <span class="hljs-attr">spec:</span><br>      <span class="hljs-attr">containers:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span><br>        <span class="hljs-attr">image:</span> <span class="hljs-string">nginx:1.17.1</span><br>        <span class="hljs-attr">ports:</span><br>        <span class="hljs-bullet">-</span> <span class="hljs-attr">containerPort:</span> <span class="hljs-number">80</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">创建pod</span><br>[root@master ~]# kubectl create -f deployment.yaml<br>deployment.apps/pc-deployment created<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看pod详情</span><br>[root@master ~]# kubectl get pods -n dev -o wide --show-labels<br>NAME                             READY   STATUS    RESTARTS   AGE   IP               NODE     NOMINATED NODE   READINESS GATES   LABELS<br>pc-deployment-7d7dd5499b-fdvxh   1/1     Running   1          11m   10.244.140.107   node02   &lt;none&gt;           &lt;none&gt;            app=nginx-pod,pod-template-hash=7d7dd5499b<br>pc-deployment-7d7dd5499b-jf79c   1/1     Running   1          11m   10.244.196.184   node01   &lt;none&gt;           &lt;none&gt;            app=nginx-pod,pod-template-hash=7d7dd5499b<br>pc-deployment-7d7dd5499b-pj8rt   1/1     Running   1          11m   10.244.196.183   node01   &lt;none&gt;           &lt;none&gt;            app=nginx-pod,pod-template-hash=7d7dd5499b<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">为了方便后面的测试，修改下三台nginx的index.html页面（三台修改的IP地址不一致）</span><br>[root@master ~]#kubectl exec -it pc-deployment-7d7dd5499b-fdvxh -n dev /bin/sh<br>echo &quot;10.244.1.39&quot; &gt; /usr/share/nginx/html/index.html<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_">#</span><span class="language-bash">修改完毕之后，访问测试</span><br>[root@master ~]# curl 10.244.140.107<br>10.244.140.107<br>[root@master ~]# curl 10.244.196.184<br>10.244.196.184<br>[root@master ~]# curl 10.244.196.183<br>10.244.196.183<br></code></pre></td></tr></table></figure>
+
+<h3 id="3-2-ClusterIP类型的Service"><a href="#3-2-ClusterIP类型的Service" class="headerlink" title="3.2 ClusterIP类型的Service"></a>3.2 ClusterIP类型的Service</h3><p>创建service-clusterip.yaml文件</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">service-clusterip</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">app:</span> <span class="hljs-string">nginx-pod</span><br>  <span class="hljs-attr">clusterIP:</span> <span class="hljs-number">10.97</span><span class="hljs-number">.97</span><span class="hljs-number">.97</span> <span class="hljs-comment"># service的ip地址，如果不写，默认会生成一个</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">ClusterIP</span><br>  <span class="hljs-attr">ports:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">80</span>  <span class="hljs-comment"># Service端口       </span><br>    <span class="hljs-attr">targetPort:</span> <span class="hljs-number">80</span> <span class="hljs-comment"># pod端口</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">创建service</span><br>[root@master ~]# kubectl create -f service-clusterip.yaml<br>service/service-clusterip created<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看service</span><br>[root@master ~]# kubectl get svc service-clusterip -n dev<br>NAME                TYPE        CLUSTER-IP    EXTERNAL-IP   PORT(S)   AGE<br>service-clusterip   ClusterIP   10.97.97.97   &lt;none&gt;        80/TCP    15s<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看service的详细信息</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">在这里有一个Endpoints列表，里面就是当前service可以负载到的服务入口</span><br>[root@master ~]# kubectl describe svc service-clusterip -n dev   <br>Name:              service-clusterip<br>Namespace:         dev<br>Labels:            &lt;none&gt;<br>Annotations:       &lt;none&gt;<br>Selector:          app=nginx-pod<br>Type:              ClusterIP<br>IP:                10.97.97.97<br>Port:              &lt;unset&gt;  80/TCP<br>TargetPort:        80/TCP<br>Endpoints:         10.244.140.107:80,10.244.196.183:80,10.244.196.184:80<br>Session Affinity:  None<br>Events:            &lt;none&gt;<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看ipvs的映射规则</span><br>[root@master ~]# ipvsadm -Ln<br>TCP  10.97.97.97:80 rr<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.140.107:80            Masq    1      0          0</span>         <br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.196.183:80            Masq    1      0          0</span>         <br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.196.184:80            Masq    1      0          0</span><br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">测试效果</span><br>[root@master ~]# curl 10.97.97.97:80<br>10.244.196.184<br>[root@master ~]# curl 10.97.97.97:80<br>10.244.196.183<br>[root@master ~]# curl 10.97.97.97:80<br>10.244.140.107<br></code></pre></td></tr></table></figure>
+
+<p><strong>Endpoint</strong></p>
+<p>Endpoint是kubernetes中的一个资源对象，存储在etcd中，用来记录一个service对应的所有pod的访问地址，它是根据service配置文件中selector描述产生的。</p>
+<p>一个Service由一组Pod组成，这些Pod通过Endpoints暴露出来，<strong>Endpoints是实现实际服务的端点集合</strong>。换句话说，service和pod之间的联系是通过endpoints实现的。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200509191917069.png" srcset="/img/loading.gif" lazyload class="" title="image-20200509191917069">
+
+<p><strong>负载分发策略</strong></p>
+<p>对Service的访问被分发到了后端的Pod上去，目前kubernetes提供了两种负载分发策略：</p>
+<ul>
+<li>如果不定义，默认使用kube-proxy的策略，比如随机、轮询</li>
+<li>基于客户端地址的会话保持模式，即来自同一个客户端发起的所有请求都会转发到固定的一个Pod上</li>
+</ul>
+<p>此模式可以使在spec中添加<code>sessionAffinity:ClientIP</code>选项</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">查看ipvs的映射规则</span><br>[root@master ~]# ipvsadm -Ln<br>TCP  10.97.97.97:80 rr<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.140.107:80            Masq    1      0          0</span>         <br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.196.183:80            Masq    1      0          0</span>         <br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.196.184:80            Masq    1      0          0</span><br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">循环访问测试</span><br>[root@master ~]# while true;do curl 10.97.97.97:80; sleep 1; done; <br>10.244.140.107<br>10.244.196.184<br>10.244.196.183<br>10.244.140.107<br>10.244.196.184<br>10.244.196.183<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看ipvs规则【persistent 代表持久】</span><br>[root@master ~]# ipvsadm -Ln<br>TCP  10.97.97.97:80 rr persistent 10800<br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.140.107:80            Masq    1      0          3</span>         <br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.196.183:80            Masq    1      0          4</span>         <br><span class="hljs-meta prompt_">  -&gt; </span><span class="language-bash">10.244.196.184:80            Masq    1      0          4</span><br><span class="hljs-meta prompt_">  </span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">循环访问测试</span><br>[root@master ~]# while true;do curl 10.97.97.97; sleep 1; done; <br>10.244.196.184<br>10.244.196.184<br>10.244.196.184<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">删除service</span><br>[root@master ~]# kubectl delete -f service-clusterip.yaml<br>service &quot;service-clusterip&quot; deleted<br></code></pre></td></tr></table></figure>
+
+<h3 id="3-3-HeadLiness类型的Service"><a href="#3-3-HeadLiness类型的Service" class="headerlink" title="3.3 HeadLiness类型的Service"></a>3.3 HeadLiness类型的Service</h3><p>在某些场景中，开发人员可能不想使用Service提供的负载均衡功能，而希望自己来控制负载均衡策略，针对这种情况，kubernetes提供了HeadLiness Service，这类Service不会分配Cluster IP，如果想要访问service，只能通过service的域名进行查询。</p>
+<p>创建service-headliness.yaml</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">service-headliness</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">app:</span> <span class="hljs-string">nginx-pod</span><br>  <span class="hljs-attr">clusterIP:</span> <span class="hljs-string">None</span> <span class="hljs-comment"># 将clusterIP设置为None，即可创建headliness Service</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">ClusterIP</span><br>  <span class="hljs-attr">ports:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">80</span>    <br>    <span class="hljs-attr">targetPort:</span> <span class="hljs-number">80</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><code class="hljs shell">[root@master ~]# kubectl create -f service-headliness.yaml<br>service/service-headliness created<br>[root@master ~]# kubectl get svc service-headliness -n dev -o wide<br>NAME                 TYPE        CLUSTER-IP   EXTERNAL-IP   PORT(S)   AGE   SELECTOR<br>service-headliness   ClusterIP   None         &lt;none&gt;        80/TCP    12s   app=nginx-pod<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看service详情</span><br>[root@master ~]# kubectl describe svc service-headliness -n dev       <br>Name:              service-headliness<br>Namespace:         dev<br>Labels:            &lt;none&gt;<br>Annotations:       &lt;none&gt;<br>Selector:          app=nginx-pod<br>Type:              ClusterIP<br>IP:                None<br>Port:              &lt;unset&gt;  80/TCP<br>TargetPort:        80/TCP<br>Endpoints:         10.244.140.107:80,10.244.196.183:80,10.244.196.184:80<br>Session Affinity:  None<br>Events:            &lt;none&gt;<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看域名的解析情况</span><br>[root@master ~]# kubectl exec -it pc-deployment-7d7dd5499b-fdvxh -n dev /bin/sh<br><span class="hljs-meta prompt_"># </span><span class="language-bash"><span class="hljs-built_in">cat</span> /etc/resolv.conf</span><br>nameserver 10.96.0.10<br>search dev.svc.cluster.local svc.cluster.local cluster.local<br>options ndots:5<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">通过域名进行查询</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">dig @10.96.0.10 service-headliness.dev.svc.cluster.local</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="3-4-NodePort类型的Service"><a href="#3-4-NodePort类型的Service" class="headerlink" title="3.4 NodePort类型的Service"></a>3.4 NodePort类型的Service</h3><p>在之前的样例中，创建的Service的ip地址只有集群内部才可以访问，如果希望将Service暴露给集群外部使用，那么就要使用到另外一种类型的Service，称为NodePort类型。NodePort的工作原理其实就是<strong>将service的端口映射到Node的一个端口上</strong>，然后就可以通过<code>NodeIp:NodePort</code>来访问service了。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200620175731338.png" srcset="/img/loading.gif" lazyload class="" title="image-20200620175731338">
+
+<p>创建service-nodeport.yaml</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">service-nodeport</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">app:</span> <span class="hljs-string">nginx-pod</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">NodePort</span> <span class="hljs-comment"># service类型</span><br>  <span class="hljs-attr">ports:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">80</span><br>    <span class="hljs-attr">nodePort:</span> <span class="hljs-number">30002</span> <span class="hljs-comment"># 指定绑定的node的端口(默认的取值范围是：30000-32767), 如果不指定，会默认分配</span><br>    <span class="hljs-attr">targetPort:</span> <span class="hljs-number">80</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">创建service</span><br>[root@master ~]# kubectl create -f service-nodeport.yaml<br>service/service-nodeport created<br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看service</span><br>[root@master ~]# kubectl get svc -n dev -o wide<br>NAME                 TYPE        CLUSTER-IP       EXTERNAL-IP   PORT(S)        AGE   SELECTOR<br>service-nodeport     NodePort    10.111.175.128   &lt;none&gt;        80:30002/TCP   8s    app=nginx-pod<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">可以通过浏览器去访问集群中任意一个nodeip的30002端口，即可访问到pod</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="3-5-LoadBalancer类型的Service"><a href="#3-5-LoadBalancer类型的Service" class="headerlink" title="3.5 LoadBalancer类型的Service"></a>3.5 LoadBalancer类型的Service</h3><p>LoadBalancer和NodePort很相似，目的都是向外部暴露一个端口，区别在于LoadBalancer会在集群的外部再来做一个负载均衡设备，而这个设备需要外部环境支持的，外部服务发送到这个设备上的请求，会被设备负载之后转发到集群中。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200510103945494.png" srcset="/img/loading.gif" lazyload class="" title="image-20200510103945494">
+
+<h3 id="3-6-ExternalName类型的Service"><a href="#3-6-ExternalName类型的Service" class="headerlink" title="3.6 ExternalName类型的Service"></a>3.6 ExternalName类型的Service</h3><p>ExternalName类型的Service用于引入集群外部的服务，它通过<code>externalName</code>属性指定外部一个服务的地址，然后在集群内部访问此service就可以访问到外部的服务了。</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200510113311209.png" srcset="/img/loading.gif" lazyload class="" title="image-20200510113311209">
+
+<p>创建service-externalname.yaml</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">service-externalname</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">ExternalName</span> <span class="hljs-comment"># service类型</span><br>  <span class="hljs-attr">externalName:</span> <span class="hljs-string">www.baidu.com</span>  <span class="hljs-comment">#改成ip地址也可以</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">创建service</span><br>[root@master ~]# kubectl create -f service-externalname.yaml<br>service/service-externalname created<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看service，可以通过域名解析访问</span><br>[root@master ~]# kubectl get svc service-externalname -n dev<br>NAME                   TYPE           CLUSTER-IP   EXTERNAL-IP     PORT(S)   AGE<br>service-externalname   ExternalName   &lt;none&gt;       www.baidu.com   &lt;none&gt;    18<br></code></pre></td></tr></table></figure>
+
+<h2 id="4-Ingress介绍"><a href="#4-Ingress介绍" class="headerlink" title="4. Ingress介绍"></a>4. Ingress介绍</h2><p>Service对集群之外暴露服务的主要方式有两种：NotePort和LoadBalancer，但是这两种方式，都有一定的缺点：</p>
+<ul>
+<li>NodePort方式的缺点是会占用很多集群机器的端口，那么当集群服务变多的时候，这个缺点就愈发明显</li>
+<li>LB方式的缺点是每个service需要一个LB，浪费、麻烦，并且需要kubernetes之外设备的支持</li>
+</ul>
+<p>基于这种现状，kubernetes提供了Ingress资源对象，Ingress只需要一个NodePort或者一个LB就可以满足暴露多个Service的需求。工作机制大致如下图表示：</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/1609905648464-a3f21b67-099e-4c8f-9152-786b6bc3e46a.png" srcset="/img/loading.gif" lazyload class="" title="Ingress介绍.png">
+
+<p>实际上，Ingress相当于一个7层的负载均衡器，是kubernetes对反向代理的一个抽象，它的工作原理类似于Nginx，可以理解成在<strong>Ingress里建立诸多映射规则，Ingress Controller通过监听这些配置规则并转化成Nginx的反向代理配置 , 然后对外部提供服务</strong>。在这里有两个核心概念：</p>
+<ul>
+<li>ingress：kubernetes中的一个对象，作用是定义请求如何转发到service的规则</li>
+<li>ingress controller：具体实现反向代理及负载均衡的程序，对ingress定义的规则进行解析，根据配置的规则来实现请求转发，实现方式有很多，比如Nginx, Contour, Haproxy等等</li>
+</ul>
+<p>Ingress（以Nginx为例）的工作原理如下：</p>
+<ol>
+<li>用户编写Ingress规则，说明哪个域名对应kubernetes集群中的哪个Service</li>
+<li>Ingress控制器动态感知Ingress服务规则的变化，然后生成一段对应的Nginx反向代理配置</li>
+<li>Ingress控制器会将生成的Nginx配置写入到一个运行着的Nginx服务中，并动态更新</li>
+<li>到此为止，其实真正在工作的就是一个Nginx了，内部配置了用户定义的请求转发规则</li>
+</ol>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200516112704764.png" srcset="/img/loading.gif" lazyload class="" title="image-20200516112704764">
+
+<h2 id="5-Ingress使用"><a href="#5-Ingress使用" class="headerlink" title="5. Ingress使用"></a>5. Ingress使用</h2><h3 id="5-1-环境准备"><a href="#5-1-环境准备" class="headerlink" title="5.1 环境准备"></a>5.1 环境准备</h3><p><strong>搭建ingress环境</strong></p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">创建文件夹</span><br>[root@master ~]# mkdir ingress-controller<br>[root@master ~]# cd ingress-controller/<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">获取ingress-nginx，本次案例使用的是0.30版本</span><br>[root@master ingress-controller]# wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/mandatory.yaml<br>[root@master ingress-controller]# wget https://raw.githubusercontent.com/kubernetes/ingress-nginx/nginx-0.30.0/deploy/static/provider/baremetal/service-nodeport.yaml<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">修改mandatory.yaml文件中的仓库</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">修改quay.io/kubernetes-ingress-controller/nginx-ingress-controller:0.30.0</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">为quay-mirror.qiniu.com/kubernetes-ingress-controller/nginx-ingress-controller:0.30.0</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">创建ingress-nginx</span><br>[root@master ingress-controller]# kubectl apply -f ./<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看ingress-nginx</span><br>[root@master ingress-controller]# kubectl get pod -n ingress-nginx<br>NAME                                           READY   STATUS    RESTARTS   AGE<br>pod/nginx-ingress-controller-fbf967dd5-4qpbp   1/1     Running   0          12h<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看service</span><br>[rootmaster ingress-controller]# kubectl get svc -n ingress-nginx<br>NAME            TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)                      AGE<br>ingress-nginx   NodePort   10.98.75.163   &lt;none&gt;        80:32240/TCP,443:31335/TCP   11h<br></code></pre></td></tr></table></figure>
+
+<p><strong>准备service和pod</strong></p>
+<p>为了后面的实验比较方便，创建如下图所示的模型</p>
+<img src="/2021/08/23/Kubernetes-Service%E8%AF%A6%E8%A7%A3/image-20200516102419998.png" srcset="/img/loading.gif" lazyload class="" title="image-20200516102419998">
+
+<p>创建tomcat-nginx.yaml</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">nginx-deployment</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">replicas:</span> <span class="hljs-number">3</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">matchLabels:</span><br>      <span class="hljs-attr">app:</span> <span class="hljs-string">nginx-pod</span><br>  <span class="hljs-attr">template:</span><br>    <span class="hljs-attr">metadata:</span><br>      <span class="hljs-attr">labels:</span><br>        <span class="hljs-attr">app:</span> <span class="hljs-string">nginx-pod</span><br>    <span class="hljs-attr">spec:</span><br>      <span class="hljs-attr">containers:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">nginx</span><br>        <span class="hljs-attr">image:</span> <span class="hljs-string">nginx:1.17.1</span><br>        <span class="hljs-attr">ports:</span><br>        <span class="hljs-bullet">-</span> <span class="hljs-attr">containerPort:</span> <span class="hljs-number">80</span><br><br><span class="hljs-meta">---</span><br><span class="hljs-meta"></span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">apps/v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Deployment</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tomcat-deployment</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">replicas:</span> <span class="hljs-number">3</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">matchLabels:</span><br>      <span class="hljs-attr">app:</span> <span class="hljs-string">tomcat-pod</span><br>  <span class="hljs-attr">template:</span><br>    <span class="hljs-attr">metadata:</span><br>      <span class="hljs-attr">labels:</span><br>        <span class="hljs-attr">app:</span> <span class="hljs-string">tomcat-pod</span><br>    <span class="hljs-attr">spec:</span><br>      <span class="hljs-attr">containers:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">name:</span> <span class="hljs-string">tomcat</span><br>        <span class="hljs-attr">image:</span> <span class="hljs-string">tomcat:8.5-jre10-slim</span><br>        <span class="hljs-attr">ports:</span><br>        <span class="hljs-bullet">-</span> <span class="hljs-attr">containerPort:</span> <span class="hljs-number">8080</span><br><br><span class="hljs-meta">---</span><br><span class="hljs-meta"></span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">nginx-service</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">app:</span> <span class="hljs-string">nginx-pod</span><br>  <span class="hljs-attr">clusterIP:</span> <span class="hljs-string">None</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">ClusterIP</span><br>  <span class="hljs-attr">ports:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">80</span><br>    <span class="hljs-attr">targetPort:</span> <span class="hljs-number">80</span><br><br><span class="hljs-meta">---</span><br><span class="hljs-meta"></span><br><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">v1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Service</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">tomcat-service</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">selector:</span><br>    <span class="hljs-attr">app:</span> <span class="hljs-string">tomcat-pod</span><br>  <span class="hljs-attr">clusterIP:</span> <span class="hljs-string">None</span><br>  <span class="hljs-attr">type:</span> <span class="hljs-string">ClusterIP</span><br>  <span class="hljs-attr">ports:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">port:</span> <span class="hljs-number">8080</span><br>    <span class="hljs-attr">targetPort:</span> <span class="hljs-number">8080</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="5-2-Http代理"><a href="#5-2-Http代理" class="headerlink" title="5.2 Http代理"></a>5.2 Http代理</h3><p>创建ingress-http.yaml</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">extensions/v1beta1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Ingress</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">ingress-http</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">rules:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">host:</span> <span class="hljs-string">nginx.itheima.com</span><br>    <span class="hljs-attr">http:</span><br>      <span class="hljs-attr">paths:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">path:</span> <span class="hljs-string">/</span><br>        <span class="hljs-attr">backend:</span><br>          <span class="hljs-attr">serviceName:</span> <span class="hljs-string">nginx-service</span><br>          <span class="hljs-attr">servicePort:</span> <span class="hljs-number">80</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">host:</span> <span class="hljs-string">tomcat.itheima.com</span><br>    <span class="hljs-attr">http:</span><br>      <span class="hljs-attr">paths:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">path:</span> <span class="hljs-string">/</span><br>        <span class="hljs-attr">backend:</span><br>          <span class="hljs-attr">serviceName:</span> <span class="hljs-string">tomcat-service</span><br>          <span class="hljs-attr">servicePort:</span> <span class="hljs-number">8080</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">创建</span><br>[root@master ~]# kubectl create -f ingress-http.yaml<br>ingress.extensions/ingress-http created<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看</span><br>[root@master ~]# kubectl get ing ingress-http -n dev<br>NAME           HOSTS                                  ADDRESS   PORTS   AGE<br>ingress-http   nginx.itheima.com,tomcat.itheima.com             80      22s<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看详情</span><br>[root@master ~]# kubectl describe ing ingress-http  -n dev<br>...<br>Rules:<br>Host                Path  Backends<br>----                ----  --------<br>nginx.itheima.com   / nginx-service:80 (10.244.1.96:80,10.244.1.97:80,10.244.2.112:80)<br>tomcat.itheima.com  / tomcat-service:8080(10.244.1.94:8080,10.244.1.95:8080,10.244.2.111:8080)<br>...<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">接下来,在本地电脑上配置host文件,解析上面的两个域名到192.168.109.100(master)上</span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">然后,就可以分别访问tomcat.itheima.com:32240  和  nginx.itheima.com:32240 查看效果了</span><br></code></pre></td></tr></table></figure>
+
+<h3 id="5-3-Https代理"><a href="#5-3-Https代理" class="headerlink" title="5.3 Https代理"></a>5.3 Https代理</h3><p>创建证书</p>
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">生成证书</span><br>openssl req -x509 -sha256 -nodes -days 365 -newkey rsa:2048 -keyout tls.key -out tls.crt -subj &quot;/C=CN/ST=BJ/L=BJ/O=nginx/CN=itheima.com&quot;<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">创建密钥</span><br>kubectl create secret tls tls-secret --key tls.key --cert tls.crt<br></code></pre></td></tr></table></figure>
+
+<p>创建ingress-https.yaml</p>
+<figure class="highlight yaml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs yaml"><span class="hljs-attr">apiVersion:</span> <span class="hljs-string">extensions/v1beta1</span><br><span class="hljs-attr">kind:</span> <span class="hljs-string">Ingress</span><br><span class="hljs-attr">metadata:</span><br>  <span class="hljs-attr">name:</span> <span class="hljs-string">ingress-https</span><br>  <span class="hljs-attr">namespace:</span> <span class="hljs-string">dev</span><br><span class="hljs-attr">spec:</span><br>  <span class="hljs-attr">tls:</span><br>    <span class="hljs-bullet">-</span> <span class="hljs-attr">hosts:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">nginx.itheima.com</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-string">tomcat.itheima.com</span><br>      <span class="hljs-attr">secretName:</span> <span class="hljs-string">tls-secret</span> <span class="hljs-comment"># 指定秘钥</span><br>  <span class="hljs-attr">rules:</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">host:</span> <span class="hljs-string">nginx.itheima.com</span><br>    <span class="hljs-attr">http:</span><br>      <span class="hljs-attr">paths:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">path:</span> <span class="hljs-string">/</span><br>        <span class="hljs-attr">backend:</span><br>          <span class="hljs-attr">serviceName:</span> <span class="hljs-string">nginx-service</span><br>          <span class="hljs-attr">servicePort:</span> <span class="hljs-number">80</span><br>  <span class="hljs-bullet">-</span> <span class="hljs-attr">host:</span> <span class="hljs-string">tomcat.itheima.com</span><br>    <span class="hljs-attr">http:</span><br>      <span class="hljs-attr">paths:</span><br>      <span class="hljs-bullet">-</span> <span class="hljs-attr">path:</span> <span class="hljs-string">/</span><br>        <span class="hljs-attr">backend:</span><br>          <span class="hljs-attr">serviceName:</span> <span class="hljs-string">tomcat-service</span><br>          <span class="hljs-attr">servicePort:</span> <span class="hljs-number">8080</span><br></code></pre></td></tr></table></figure>
+
+<figure class="highlight shell"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><code class="hljs shell"><span class="hljs-meta prompt_"># </span><span class="language-bash">创建</span><br>[root@master ~]# kubectl create -f ingress-https.yaml<br>ingress.extensions/ingress-https created<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看</span><br>[root@master ~]# kubectl get ing ingress-https -n dev<br>NAME            HOSTS                                  ADDRESS         PORTS     AGE<br>ingress-https   nginx.itheima.com,tomcat.itheima.com   10.104.184.38   80, 443   2m42s<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">查看详情</span><br>[root@master ~]# kubectl describe ing ingress-https -n dev<br>...<br>TLS:<br>  tls-secret terminates nginx.itheima.com,tomcat.itheima.com<br>Rules:<br>Host              Path Backends<br>----              ---- --------<br>nginx.itheima.com  /  nginx-service:80 (10.244.1.97:80,10.244.1.98:80,10.244.2.119:80)<br>tomcat.itheima.com /  tomcat-service:8080(10.244.1.99:8080,10.244.2.117:8080,10.244.2.120:8080)<br>...<br><span class="hljs-meta prompt_"></span><br><span class="hljs-meta prompt_"># </span><span class="language-bash">下面可以通过浏览器访问https://nginx.itheima.com:31335 和 https://tomcat.itheima.com:31335来查看了</span><br></code></pre></td></tr></table></figure>
+
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Kubernetes/">Kubernetes</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Kubernetes/">Kubernetes</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2021/08/24/Kubernetes-%E6%95%B0%E6%8D%AE%E5%AD%98%E5%82%A8/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Kubernetes-数据存储</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2021/08/20/Kubernetes-Pod%E6%8E%A7%E5%88%B6%E5%99%A8%E8%AF%A6%E8%A7%A3/">
+                        <span class="hidden-mobile">Kubernetes-Pod控制器详解</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/tocbot@4.12.3/dist/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4.3.1/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js" ></script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

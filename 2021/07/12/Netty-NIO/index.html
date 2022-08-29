@@ -230,9 +230,11 @@
             <div class="markdown-body">
               <h1 id="Java-NIO"><a href="#Java-NIO" class="headerlink" title="Java NIO"></a>Java NIO</h1><h2 id="一、简介"><a href="#一、简介" class="headerlink" title="一、简介"></a><strong>一、简介</strong></h2><p>Java NIO（New IO）是从Java 1.4版本开始引入的一个新的IO API，是一种同步非阻塞的I&#x2F;O模型，也是I&#x2F;O多路复用的基础，<strong>可以替代标准的Java IO API</strong>。NIO与原来的IO有同样的作用和目的，但是使用的方式完全不同，NIO支持<strong>面向缓冲区的、基于通道的IO操作</strong>。NIO将以更加高效的方式进行文件的读写操作。</p>
 <p>传统IO在传输数据时，根据输入输出的不同需要分别建立<strong>不同的链接</strong>，而且传输的数据是以<strong>流</strong>的形式在链接上进行传输的：</p>
-<p><img src="/Netty-NIO/20201109084453.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<img src="/2021/07/12/Netty-NIO/20201109084453.png" srcset="/img/loading.gif" lazyload class="" title="img">
+
 <p>NIO在传输数据时，会在输入输出端之间建立<strong>通道</strong>，然后将数据放入到<strong>缓冲区</strong>中。缓冲区通过通道来传输数据：</p>
-<p><img src="/Netty-NIO/20201109085054.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<img src="/2021/07/12/Netty-NIO/20201109085054.png" srcset="/img/loading.gif" lazyload class="" title="img">
+
 <h2 id="二、三大组件介绍"><a href="#二、三大组件介绍" class="headerlink" title="二、三大组件介绍"></a>二、三大组件介绍</h2><p>NIO主要有三大核心部分：<code>Channel</code>(通道)，<code>Buffer</code>(缓冲区)，<code>Selector</code>(选择器)。传统IO基于字节流和字符流进行操作，而NIO基于<code>Channel</code>和<code>Buffer</code>进行操作，数据通过通道读取到缓冲区中，或者从缓冲区写入到通道。<code>Selector</code>用于监听多个通道的事件（比如：建立连接、接收到数据）。因此，单个线程可以监听多个数据通道，也就是IO多路复用。</p>
 <h3 id="1-Buffer"><a href="#1-Buffer" class="headerlink" title="1. Buffer"></a>1. Buffer</h3><h4 id="1-1-缓冲区类型"><a href="#1-1-缓冲区类型" class="headerlink" title="1.1 缓冲区类型"></a>1.1 缓冲区类型</h4><p>Buffer有以下几种，其中使用较多的是ByteBuffer，后续内容主要介绍ByteBuffer</p>
 <ul>
@@ -253,17 +255,23 @@
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-comment">//用于存放数据的二进制数组</span><br><span class="hljs-keyword">final</span> <span class="hljs-type">byte</span>[] hb;<br><span class="hljs-comment">//继承自Buffer父类：</span><br><span class="hljs-keyword">private</span> <span class="hljs-type">int</span> <span class="hljs-variable">position</span> <span class="hljs-operator">=</span> <span class="hljs-number">0</span>;<br><span class="hljs-keyword">private</span> <span class="hljs-type">int</span> limit;<br><span class="hljs-keyword">private</span> <span class="hljs-type">int</span> capacity;<br></code></pre></td></tr></table></figure>
 
 <p>初始状态</p>
-<p><img src="/Netty-NIO/0021.png" srcset="/img/loading.gif" lazyload></p>
+<img src="/2021/07/12/Netty-NIO/0021.png" srcset="/img/loading.gif" lazyload class="">
+
 <p>写模式下，position是写入位置，limit等于容量，下图表示写入4个字节后的状态</p>
-<p><img src="/Netty-NIO/0018.png" srcset="/img/loading.gif" lazyload alt="0018"></p>
+<img src="/2021/07/12/Netty-NIO/0018.png" srcset="/img/loading.gif" lazyload class="" width="0018">
+
 <p>调用flip方法后，position切换为读取状态，limit为读取限制</p>
-<p><img src="/Netty-NIO/0019.png" srcset="/img/loading.gif" lazyload alt="0019"></p>
+<img src="/2021/07/12/Netty-NIO/0019.png" srcset="/img/loading.gif" lazyload class="" width="0019">
+
 <p>读取4个字节后，状态如下</p>
-<p><img src="/Netty-NIO/0020.png" srcset="/img/loading.gif" lazyload alt="0020"></p>
+<img src="/2021/07/12/Netty-NIO/0020.png" srcset="/img/loading.gif" lazyload class="" width="0020">
+
 <p>调用clear方法后，状态如下，position和limit都回到初始位置，</p>
-<p><img src="/Netty-NIO/0021-1626102313561.png" srcset="/img/loading.gif" lazyload alt="0021"></p>
+<img src="/2021/07/12/Netty-NIO/0021-1626102313561.png" srcset="/img/loading.gif" lazyload class="" width="0021">
+
 <p>调用compact方法时，把未读完的部分向前压缩，然后切换至写模式</p>
-<p><img src="/Netty-NIO/0022.png" srcset="/img/loading.gif" lazyload alt="0022"></p>
+<img src="/2021/07/12/Netty-NIO/0022.png" srcset="/img/loading.gif" lazyload class="" width="0022">
+
 <h4 id="1-3-ByteBuffer常用方法"><a href="#1-3-ByteBuffer常用方法" class="headerlink" title="1.3 ByteBuffer常用方法"></a>1.3 ByteBuffer常用方法</h4><p><strong>分配空间</strong></p>
 <p>可以使用allocate方法为ByteBuffer分配空间</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">Bytebuffer</span> <span class="hljs-variable">buf</span> <span class="hljs-operator">=</span> ByteBuffer.allocate(<span class="hljs-number">16</span>);<br></code></pre></td></tr></table></figure>
@@ -305,21 +313,26 @@
 <p>通过allocate()方法获取的缓冲区都是非直接缓冲区。这些缓冲区是建立在JVM堆内存之中的。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> ByteBuffer <span class="hljs-title function_">allocate</span><span class="hljs-params">(<span class="hljs-type">int</span> capacity)</span> &#123;<br>    <span class="hljs-keyword">if</span> (capacity &lt; <span class="hljs-number">0</span>)<br>    <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>();<br><br>    <span class="hljs-comment">// 在堆内存中开辟空间</span><br>    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">HeapByteBuffer</span>(capacity, capacity);<br>&#125;<br><br>HeapByteBuffer(<span class="hljs-type">int</span> cap, <span class="hljs-type">int</span> lim) &#123;        <span class="hljs-comment">// package-private</span><br>    <span class="hljs-comment">// new byte[cap] 创建数组，在堆内存中开辟空间</span><br>    <span class="hljs-built_in">super</span>(-<span class="hljs-number">1</span>, <span class="hljs-number">0</span>, lim, cap, <span class="hljs-keyword">new</span> <span class="hljs-title class_">byte</span>[cap], <span class="hljs-number">0</span>);<br>    <span class="hljs-comment">/*</span><br><span class="hljs-comment">    hb = new byte[cap];</span><br><span class="hljs-comment">    offset = 0;</span><br><span class="hljs-comment">    */</span><br>&#125;<br></code></pre></td></tr></table></figure>
 
-<p><img src="/Netty-NIO/20201109151057.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<img src="/2021/07/12/Netty-NIO/20201109151057.png" srcset="/img/loading.gif" lazyload class="" title="img">
+
 <p>通过非直接缓冲区，想要将数据写入到物理磁盘中，或者是从物理磁盘读取数据。都需要经过JVM和操作系统，数据在两个地址空间中传输时，会copy一份保存在对方的空间中。所以费直接缓冲区的读取效率较低。</p>
 <p><strong>直接缓冲区</strong></p>
 <p>只有ByteBuffer可以获得直接缓冲区，通过allocateDirect()获取的缓冲区为直接缓冲区，这些缓冲区是建立在物理内存之中的。</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">static</span> ByteBuffer <span class="hljs-title function_">allocateDirect</span><span class="hljs-params">(<span class="hljs-type">int</span> capacity)</span> &#123;<br>    <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">DirectByteBuffer</span>(capacity);<br>&#125;<br><br>DirectByteBuffer(<span class="hljs-type">int</span> cap) &#123;                   <span class="hljs-comment">// package-private</span><br>	...<br>    <span class="hljs-comment">// 申请物理内存</span><br>	<span class="hljs-type">boolean</span> <span class="hljs-variable">pa</span> <span class="hljs-operator">=</span> VM.isDirectMemoryPageAligned();<br>	...<br>&#125;<br></code></pre></td></tr></table></figure>
 
-<p><img src="/Netty-NIO/20201109151520.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<img src="/2021/07/12/Netty-NIO/20201109151520.png" srcset="/img/loading.gif" lazyload class="" title="img">
+
 <p>直接缓冲区通过在操作系统和JVM之间创建物理内存映射文件加快缓冲区数据读&#x2F;写入物理磁盘的速度。放到物理内存映射文件中的数据就不归应用程序控制了，操作系统会自动将物理内存映射文件中的数据写入到物理内存中。</p>
 <h3 id="2-Channel"><a href="#2-Channel" class="headerlink" title="2. Channel"></a>2. Channel</h3><h4 id="2-1-介绍"><a href="#2-1-介绍" class="headerlink" title="2.1 介绍"></a>2.1 介绍</h4><p>通道（<code>Channel</code>）是对 BIO 中的流的模拟，可以通过它读写数据。只不过<strong>Channel 本身不能直接访问数据，Channel 只能与Buffer 进行交互</strong>。类似在 Linux 之类操作系统上看到的文件描述符，是 NIO 中被用来支持批量式 IO 操作的一种抽象。</p>
 <h4 id="2-2-模型"><a href="#2-2-模型" class="headerlink" title="2.2 模型"></a>2.2 模型</h4><p>应用程序进行读写操作调用函数时，<strong>底层调用的操作系统提供给用户的读写API</strong>，调用这些API时会生成对应的指令，CPU则会执行这些指令。在计算机刚出现的那段时间，<strong>所有读写请求的指令都有CPU去执行</strong>，过多的读写请求会导致CPU无法去执行其他命令，从而CPU的利用率降低。</p>
-<p><img src="/Netty-NIO/20201109153039.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<img src="/2021/07/12/Netty-NIO/20201109153039.png" srcset="/img/loading.gif" lazyload class="" title="img">
+
 <p>后来，<strong>DMA</strong>(Direct Memory Access，直接存储器访问)出现了。当IO请求传到计算机底层时，<strong>DMA会向CPU请求，让DMA去处理这些IO操作</strong>，从而可以让CPU去执行其他指令。DMA处理IO操作时，会请求获取总线的使用权。<strong>当IO请求过多时，会导致大量总线用于处理IO请求，从而降低效率</strong>。</p>
-<p><img src="/Netty-NIO/20201109153439.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<img src="/2021/07/12/Netty-NIO/20201109153439.png" srcset="/img/loading.gif" lazyload class="" title="img">
+
 <p>于是便有了<strong>Channel(通道)<strong>，Channel相当于一个</strong>专门用于IO操作的独立处理器</strong>，它具有独立处理IO请求的能力，当有IO请求时，它会自行处理这些IO请求。</p>
-<p><img src="/Netty-NIO/20201109154113.png" srcset="/img/loading.gif" lazyload alt="img"></p>
+<img src="/2021/07/12/Netty-NIO/20201109154113.png" srcset="/img/loading.gif" lazyload class="" title="img">
+
 <h4 id="2-3-Channel的种类"><a href="#2-3-Channel的种类" class="headerlink" title="2.3 Channel的种类"></a>2.3 Channel的种类</h4><p>包括以下类型：</p>
 <ul>
 <li><code>FileChannel</code>：从文件中读写数据；</li>
@@ -514,33 +527,41 @@ end
 <li>等待数据阶段</li>
 <li>复制数据阶段</li>
 </ul>
-<p><img src="/Netty-NIO/0033.png" srcset="/img/loading.gif" lazyload alt="0033"></p>
+<img src="/2021/07/12/Netty-NIO/0033.png" srcset="/img/loading.gif" lazyload class="" width="0033">
+
 <ul>
 <li>阻塞IO</li>
 </ul>
-<p><img src="/Netty-NIO/0039.png" srcset="/img/loading.gif" lazyload alt="0039"></p>
+<img src="/2021/07/12/Netty-NIO/0039.png" srcset="/img/loading.gif" lazyload class="" width="0039">
+
 <ul>
 <li>非阻塞IO</li>
 </ul>
-<p><img src="/Netty-NIO/0035.png" srcset="/img/loading.gif" lazyload alt="0035"></p>
+<img src="/2021/07/12/Netty-NIO/0035.png" srcset="/img/loading.gif" lazyload class="" width="0035">
+
 <ul>
 <li>多路复用</li>
 </ul>
-<p><img src="/Netty-NIO/0038.png" srcset="/img/loading.gif" lazyload alt="0038"></p>
+<img src="/2021/07/12/Netty-NIO/0038.png" srcset="/img/loading.gif" lazyload class="" width="0038">
+
 <ul>
 <li>信号驱动，异步IO</li>
 </ul>
-<p><img src="/Netty-NIO/0037.png" srcset="/img/loading.gif" lazyload alt="0037"></p>
+<img src="/2021/07/12/Netty-NIO/0037.png" srcset="/img/loading.gif" lazyload class="" width="0037">
+
 <ul>
 <li>阻塞IO vs 多路复用</li>
 </ul>
-<p><img src="/Netty-NIO/0034.png" srcset="/img/loading.gif" lazyload alt="0034"></p>
-<p><img src="/Netty-NIO/0036.png" srcset="/img/loading.gif" lazyload alt="0036"></p>
+<img src="/2021/07/12/Netty-NIO/0034.png" srcset="/img/loading.gif" lazyload class="" width="0034">
+
+<img src="/2021/07/12/Netty-NIO/0036.png" srcset="/img/loading.gif" lazyload class="" width="0036">
+
 <h3 id="3-零拷贝"><a href="#3-零拷贝" class="headerlink" title="3. 零拷贝"></a>3. 零拷贝</h3><h4 id="3-1-传统IO问题"><a href="#3-1-传统IO问题" class="headerlink" title="3.1 传统IO问题"></a>3.1 传统IO问题</h4><p>传统的IO将一个文件通过<code>socket</code>写出</p>
 <figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-type">File</span> <span class="hljs-variable">f</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">File</span>(<span class="hljs-string">&quot;helloword/data.txt&quot;</span>);<br><span class="hljs-type">RandomAccessFile</span> <span class="hljs-variable">file</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">RandomAccessFile</span>(file, <span class="hljs-string">&quot;r&quot;</span>);<br><br><span class="hljs-type">byte</span>[] buf = <span class="hljs-keyword">new</span> <span class="hljs-title class_">byte</span>[(<span class="hljs-type">int</span>)f.length()];<br>file.read(buf);<br><br><span class="hljs-type">Socket</span> <span class="hljs-variable">socket</span> <span class="hljs-operator">=</span> ...;<br>socket.getOutputStream().write(buf);<br></code></pre></td></tr></table></figure>
 
 <p>内部工作流程：</p>
-<p><img src="/Netty-NIO/0024.png" srcset="/img/loading.gif" lazyload alt="0024"></p>
+<img src="/2021/07/12/Netty-NIO/0024.png" srcset="/img/loading.gif" lazyload class="" width="0024">
+
 <ol>
 <li>java本身并不具备IO读写能力，因此read方法调用后，要从java程序的<strong>用户态</strong>切换到<strong>内核态</strong>，去调用操作系统（Kernel）的API，将数据读到<strong>内核缓冲区</strong>。这期间用户线程阻塞，操作系统使用DMA（Direct Memory Access）来实现文件读，期间也不会使用CPU。</li>
 <li>从<strong>内核态</strong>切换回<strong>用户态</strong>，将数据从<strong>内核缓冲区</strong>读入<strong>用户缓冲区</strong>（即byte[] buf），这期间CPU会参与拷贝，无法利用DMA。</li>
@@ -557,7 +578,8 @@ end
 <li><code>ByteBuffer.allocate(10)</code> <code>HeapByteBuffer</code>使用的还是java内存</li>
 <li><code>ByteBuffer.allocateDirect(10)</code> <code>DirectByteBuffer</code>使用的是操作系统内存</li>
 </ul>
-<p><img src="/Netty-NIO/0025.png" srcset="/img/loading.gif" lazyload alt="0025"></p>
+<img src="/2021/07/12/Netty-NIO/0025.png" srcset="/img/loading.gif" lazyload class="" width="0025">
+
 <p>大部分步骤与优化前相同，不再赘述。唯有一点：java可以使用DirectByteBuf将堆外内存映射到jvm内存中来直接访问使用</p>
 <ul>
 <li>这块内存不受jvm垃圾回收的影响，因此内存地址固定，有助于IO读写</li>
@@ -569,7 +591,8 @@ end
 <li>减少了一次数据拷贝，用户态与内核态的切换次数没有减少</li>
 </ul>
 <p><strong>进一步优化1</strong>（底层采用了linux 2.1后提供的<code>sendFile</code>方法），java中对应着两个<code>channel</code>调用<code>transferTo</code>&#x2F;<code>transferFrom</code>方法拷贝数据</p>
-<p><img src="/Netty-NIO/0026.png" srcset="/img/loading.gif" lazyload alt="0026"></p>
+<img src="/2021/07/12/Netty-NIO/0026.png" srcset="/img/loading.gif" lazyload class="" width="0026">
+
 <ol>
 <li>java调用<code>transferTo</code>方法后，要从java程序的<strong>用户态</strong>切换至<strong>内核态</strong>，使用DMA将数据读入<strong>内核缓冲区</strong>，不会使用CPU</li>
 <li>数据从<strong>内核缓冲区</strong>传输到<strong>socket缓冲区</strong>，CPU会参与拷贝</li>
@@ -581,7 +604,8 @@ end
 <li>数据拷贝了3次</li>
 </ul>
 <p><strong>进一步优化2（linux 2.4）</strong></p>
-<p><img src="/Netty-NIO/0027.png" srcset="/img/loading.gif" lazyload alt="0027"></p>
+<img src="/2021/07/12/Netty-NIO/0027.png" srcset="/img/loading.gif" lazyload class="" width="0027">
+
 <ol>
 <li>java调用<code>transferTo</code>方法后，要从java程序的用户态切换至内核态，使用DMA将数据读入<strong>内核缓冲区</strong>，不会使用CPU</li>
 <li>只会将一些<code>offset</code>和<code>length</code>信息拷如<strong>socket缓冲区</strong>，几乎无消耗</li>
@@ -610,9 +634,9 @@ end
                   <div class="post-meta">
                     <i class="iconfont icon-tags"></i>
                     
-                      <a class="hover-with-bg" href="/tags/NIO/">NIO</a>
-                    
                       <a class="hover-with-bg" href="/tags/Netty/">Netty</a>
+                    
+                      <a class="hover-with-bg" href="/tags/NIO/">NIO</a>
                     
                   </div>
                 
