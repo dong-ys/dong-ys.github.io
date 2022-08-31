@@ -1,0 +1,619 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Dongys">
+  <meta name="keywords" content="">
+  
+  <title>Kafka源码解析-日志对象初始化流程 - Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10.7.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"dong-ys.github.io","root":"/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Dongys's Blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('https://picture.zwc365.com/getbing.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Kafka源码解析-日志对象初始化流程">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2022-08-30 17:08" pubdate>
+        2022年8月30日 下午
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      5.9k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      82
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Kafka源码解析-日志对象初始化流程</h1>
+            
+            <div class="markdown-body">
+              <h1 id="Kafka源码解析-日志对象初始化流程"><a href="#Kafka源码解析-日志对象初始化流程" class="headerlink" title="Kafka源码解析-日志对象初始化流程"></a>Kafka源码解析-日志对象初始化流程</h1><h2 id="Log-对象源码结构"><a href="#Log-对象源码结构" class="headerlink" title="Log 对象源码结构"></a>Log 对象源码结构</h2><p>Kafka 每个分区在磁盘上对应一个物理目录，同时对应一个Log对象。在进行数据存储时，一个分区的数据会划分成多个日志段进行存储，多个日志段由分区对应的Log对象进行管理。</p>
+<p>在服务端启动时，会初始化Log对象并读取磁盘上的日志段文件，然后在内存中生成对应的LogSegment对象交由Log对象进行管理。本篇文章将分析Log对象是如何进行初始化的以及日志段文件又是如何被加载的。</p>
+<p>Log 源码位于 Kafka core 工程的 log 源码包下，文件名是 Log.scala。总体上，该文件定义了 10 个类和对象，他们的作用如下：</p>
+<ul>
+<li><p><strong>LogAppendInfo（C）：</strong>保存了一组待写入消息的各种元数据信息。比如：这组消息中第一条消息的偏移量、最后一条消息的偏移量、这组消息中最大的时间戳、接收消息的压缩类型、写入本地存储时的压缩类型等等。</p>
+</li>
+<li><p><strong>LogAppendInfo（O）：</strong>伴生对象，定义了一些工厂方法，用于创建特定的LogAppendInfo实例对象。</p>
+</li>
+<li><p><strong>Log（C）：</strong>管理服务端存储的各种操作</p>
+</li>
+<li><ul>
+<li>日志段管理：滚动生成新日志段、组织并管理分区下的所有日志段等</li>
+<li>读写操作：进行日志的读写</li>
+<li>关键偏移量管理：如LogStartOffset、LEO等</li>
+<li>高水位操作管理：</li>
+</ul>
+</li>
+<li><p><strong>Log（O）：</strong>定义了Log伴生类的工厂方法、一些常量等。</p>
+</li>
+<li><p><strong>RollParams（C）：</strong>定义用于控制日志段是否切分（Roll）的数据结构。</p>
+</li>
+<li><p><strong>RollParams（O）：</strong>定义对应伴生类的工厂方法。</p>
+</li>
+<li><p><strong>LogMetricNames：</strong>定义了Log对象的监控指标。</p>
+</li>
+<li><p><strong>LogOffsetSnapshot：</strong>封装分区所有偏移量元数据的容器类。</p>
+</li>
+<li><p><strong>LogReadInfo：</strong>封装读取日志返回的数据及其元数据。</p>
+</li>
+<li><p><strong>CompletedTxn：</strong>记录已完成事务的元数据，主要用于构建事务索引。</p>
+</li>
+</ul>
+<h2 id="源码分析"><a href="#源码分析" class="headerlink" title="源码分析"></a>源码分析</h2><h3 id="Log-对象"><a href="#Log-对象" class="headerlink" title="Log 对象"></a>Log 对象</h3><p>考虑到伴生对象多用于保存静态变量和静态方法（比如静态工厂方法等），因此我们先看伴生对象（即 Log Object）的实现。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">Log</span> </span>&#123;<br><br>  <span class="hljs-comment">/** a log file */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">LogFileSuffix</span> = <span class="hljs-string">&quot;.log&quot;</span><br><br>  <span class="hljs-comment">/** an index file */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">IndexFileSuffix</span> = <span class="hljs-string">&quot;.index&quot;</span><br><br>  <span class="hljs-comment">/** a time index file */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">TimeIndexFileSuffix</span> = <span class="hljs-string">&quot;.timeindex&quot;</span><br><br>  <span class="hljs-comment">/** 为幂等型或事务型 Producer 所做的快照文件 */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">ProducerSnapshotFileSuffix</span> = <span class="hljs-string">&quot;.snapshot&quot;</span><br><br>  <span class="hljs-comment">/** an (aborted) txn index */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">TxnIndexFileSuffix</span> = <span class="hljs-string">&quot;.txnindex&quot;</span><br><br>  <span class="hljs-comment">/** a file that is scheduled to be deleted */</span><br>  <span class="hljs-comment">/** 标识需要被删除的文件 */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">DeletedFileSuffix</span> = <span class="hljs-string">&quot;.deleted&quot;</span><br><br>  <span class="hljs-comment">/** A temporary file that is being used for log cleaning */</span><br>  <span class="hljs-comment">/** 在日志清理操作第一阶段生成的临时文件，文件中的数据状态不明确，无法正确恢复的文件 */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">CleanedFileSuffix</span> = <span class="hljs-string">&quot;.cleaned&quot;</span><br><br>  <span class="hljs-comment">/** A temporary file used when swapping files into the log */</span><br>  <span class="hljs-comment">/** 完成执行日志清理后的文件，但是在替换原文件时宕机 */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">SwapFileSuffix</span> = <span class="hljs-string">&quot;.swap&quot;</span><br><br>  <span class="hljs-comment">/** Clean shutdown file that indicates the broker was cleanly shutdown in 0.8 and higher.</span><br><span class="hljs-comment">   * This is used to avoid unnecessary recovery after a clean shutdown. In theory this could be</span><br><span class="hljs-comment">   * avoided by passing in the recovery point, however finding the correct position to do this</span><br><span class="hljs-comment">   * requires accessing the offset index which may not be safe in an unclean shutdown.</span><br><span class="hljs-comment">   * For more information see the discussion in PR#2104</span><br><span class="hljs-comment">   */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">CleanShutdownFile</span> = <span class="hljs-string">&quot;.kafka_cleanshutdown&quot;</span><br><br>  <span class="hljs-comment">/** a directory that is scheduled to be deleted */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">DeleteDirSuffix</span> = <span class="hljs-string">&quot;-delete&quot;</span><br><br>  <span class="hljs-comment">/** a directory that is used for future partition */</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">FutureDirSuffix</span> = <span class="hljs-string">&quot;-future&quot;</span><br>  ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Kafka 中定义了多少种文件类型，除了常见的.log、.index、.timeindex和.txindex以外，还有其他几种类型的文件：</p>
+<ul>
+<li><p>.snapshot 是 Kafka 为幂等型或事务型 Producer 所做的快照文件。</p>
+</li>
+<li><p>.deleted 是删除日志段操作创建的文件。目前删除日志段文件是异步操作，Broker 端把日志段文件从.log 后缀修改为.deleted 后缀。如果你看到一大堆.deleted 后缀的文件名，那就是 Kafka 在执行日志段文件删除。</p>
+</li>
+<li><p>.cleaned 和.swap 都是 Compaction 操作的产物，等我们讲到 Cleaner 的时候再说。</p>
+</li>
+<li><p>-delete 则是应用于文件夹的。当你删除一个主题的时候，主题的分区文件夹会被加上这个后缀。</p>
+</li>
+<li><p>-future 是用于变更主题分区文件夹地址的，属于比较高阶的用法。</p>
+</li>
+</ul>
+<p>除了这些文件类型之外，Log Object 还定义了超多的工具类方法，比如：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">filenamePrefixFromOffset</span></span>(offset: <span class="hljs-type">Long</span>): <span class="hljs-type">String</span> = &#123;<br>  <span class="hljs-keyword">val</span> nf = <span class="hljs-type">NumberFormat</span>.getInstance()<br>  nf.setMinimumIntegerDigits(<span class="hljs-number">20</span>)<br>  nf.setMaximumFractionDigits(<span class="hljs-number">0</span>)<br>  nf.setGroupingUsed(<span class="hljs-literal">false</span>)<br>  nf.format(offset)<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这个方法的作用是<strong>通过给定的位移值计算出对应的日志段文件名</strong>。Kafka 日志文件固定是 20 位的长度，filenamePrefixFromOffset 方法就是用前面补 0 的方式，把给定位移值扩充成一个固定 20 位长度的字符串。</p>
+<p>接下来看一下 Log class的定义：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Log</span>(<span class="hljs-params">@volatile private var _dir: <span class="hljs-type">File</span>, //即主题分区的路径，每个主题的每个分区对应一个log对象</span></span><br><span class="hljs-params"><span class="hljs-class">          @volatile var config: <span class="hljs-type">LogConfig</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          @volatile var logStartOffset: <span class="hljs-type">Long</span>, //当前分区日志的起始偏移量</span></span><br><span class="hljs-params"><span class="hljs-class">          @volatile var recoveryPoint: <span class="hljs-type">Long</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          scheduler: <span class="hljs-type">Scheduler</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          brokerTopicStats: <span class="hljs-type">BrokerTopicStats</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          val time: <span class="hljs-type">Time</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          val maxProducerIdExpirationMs: <span class="hljs-type">Int</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          val producerIdExpirationCheckIntervalMs: <span class="hljs-type">Int</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          val topicPartition: <span class="hljs-type">TopicPartition</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          val producerStateManager: <span class="hljs-type">ProducerStateManager</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          logDirFailureChannel: <span class="hljs-type">LogDirFailureChannel</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">          private val hadCleanShutdown: <span class="hljs-type">Boolean</span> = true,</span></span><br><span class="hljs-params"><span class="hljs-class">          val keepPartitionMetadataFile: <span class="hljs-type">Boolean</span> = true</span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">Logging</span> <span class="hljs-keyword">with</span> <span class="hljs-title">KafkaMetricsGroup</span></span><br></code></pre></td></tr></table></figure>
+
+<p>这里重点关注如下几个属性：</p>
+<ul>
+<li><strong>@volatile var dir: File：</strong>分区对应的路径，当配置了log.dirs后，每个分区会在该目录下创建一个子目录。被volatile关键字修饰，说明该属性的值是易变的，且变化对其他线程可见，下同。</li>
+<li><strong>@volatile var logStartOffset: Long：</strong>该分区消息的起始偏移量</li>
+<li><strong>topicPartition：</strong>分区对象</li>
+<li><strong>recoveryPoint：</strong>上一次flush刷写磁盘时消息的最大偏移量</li>
+</ul>
+<p><strong>除此之外，Log内部还定义了一些关键的变量：</strong></p>
+<ul>
+<li><p>isMemoryMappedBufferClosed：标记索引文件对应的内存映射是否关闭，如果关闭，则无法执行任何的IO操作</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-meta">@volatile</span> <span class="hljs-keyword">private</span> <span class="hljs-keyword">var</span> isMemoryMappedBufferClosed = <span class="hljs-literal">false</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p>nextOffsetMetadata：封装了下一条待插入消息的位移值，可以理解为LEO</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-meta">@volatile</span> <span class="hljs-keyword">private</span> <span class="hljs-keyword">var</span> nextOffsetMetadata: <span class="hljs-type">LogOffsetMetadata</span> = _<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>replicaHighWatermark：分区日志高水位值HW</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-meta">@volatile</span> <span class="hljs-keyword">private</span> <span class="hljs-keyword">var</span> replicaHighWatermark: <span class="hljs-type">Option</span>[<span class="hljs-type">Long</span>] = <span class="hljs-type">None</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p>segments：保存了 Log 下的所有日志段对象，是一个map，key是日志段的起始位移值，value是日志段对象LogSegment本身。这里使用了ConcurrentSkipListMap跳表的结构，可以利用该结构提供的线程安全以及支持排序的方法</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> segments: <span class="hljs-type">ConcurrentNavigableMap</span>[java.lang.<span class="hljs-type">Long</span>, <span class="hljs-type">LogSegment</span>] = <span class="hljs-keyword">new</span> <span class="hljs-type">ConcurrentSkipListMap</span>[java.lang.<span class="hljs-type">Long</span>, <span class="hljs-type">LogSegment</span>]<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>leaderEpochCache：是一个缓存类数据，里面保存了分区 Leader 的 Epoch 值与对应起始位移值的映射关系。Leader epoch 从0.11版本开始引入，用来判断出现 Failure 时是否执行日志截断操作（Truncation）。这里的 Leader Epoch Cache是一个缓存类数据，里面保存了分区 Leader 的 Epoch 值与对应位移值的映射关系</p>
+</li>
+<li><p>&#96;&#96;&#96;scala<br>@volatile var leaderEpochCache: Option[LeaderEpochFileCache] &#x3D; None</p>
+<figure class="highlight reasonml"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br></pre></td><td class="code"><pre><code class="hljs reasonml"><br>### Log 初始化<br><br>整个日志初始化流程可以分为五个步骤，其中第三步比较复杂：<br><br>&#123;% asset_img modb_20211012_186068d0-<span class="hljs-number">2</span>b3f-<span class="hljs-number">11</span>ec-<span class="hljs-number">94</span>a3-fa163eb4f6be.png img %&#125;<br><br>Log 的初始化源码：<br><br>```scala<br>locally &#123;<br>  <span class="hljs-comment">// create the log directory if it doesn&#x27;t exist</span><br>  <span class="hljs-comment">// 创建分区日志路径</span><br>  <span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">Files</span>.</span></span>create<span class="hljs-constructor">Directories(<span class="hljs-params">dir</span>.<span class="hljs-params">toPath</span>)</span><br><br>  <span class="hljs-comment">// 初始化Leader Epoch Cache</span><br>  initialize<span class="hljs-constructor">LeaderEpochCache()</span><br>  initialize<span class="hljs-constructor">PartitionMetadata()</span><br><br>  <span class="hljs-comment">// 加载所有日志段对象</span><br>  <span class="hljs-keyword">val</span> nextOffset = load<span class="hljs-constructor">Segments()</span><br><br>  <span class="hljs-comment">/* Calculate the offset of the next message */</span><br>  <span class="hljs-comment">// 更新nextOffsetMetadata 和 LogStartOffset</span><br>  nextOffsetMetadata = <span class="hljs-constructor">LogOffsetMetadata(<span class="hljs-params">nextOffset</span>, <span class="hljs-params">activeSegment</span>.<span class="hljs-params">baseOffset</span>, <span class="hljs-params">activeSegment</span>.<span class="hljs-params">size</span>)</span><br><br>  <span class="hljs-comment">// 清除大于等于下条数据日志位移值的所有epoch</span><br>  leaderEpochCache.foreach(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">_</span>.</span></span>truncate<span class="hljs-constructor">FromEnd(<span class="hljs-params">nextOffsetMetadata</span>.<span class="hljs-params">messageOffset</span>)</span>)<br><br>  update<span class="hljs-constructor">LogStartOffset(<span class="hljs-params">math</span>.<span class="hljs-params">max</span>(<span class="hljs-params">logStartOffset</span>, <span class="hljs-params">segments</span>.<span class="hljs-params">firstEntry</span>.<span class="hljs-params">getValue</span>.<span class="hljs-params">baseOffset</span>)</span>)<br><br>  <span class="hljs-comment">// The earliest leader epoch may not be flushed during a hard failure. Recover it here.</span><br>  <span class="hljs-comment">// 清除无效epoch</span><br>  leaderEpochCache.foreach(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">_</span>.</span></span>truncate<span class="hljs-constructor">FromStart(<span class="hljs-params">logStartOffset</span>)</span>)<br><br>  <span class="hljs-comment">// Any segment loading or recovery code must not use producerStateManager, so that we can build the full state here</span><br>  <span class="hljs-comment">// from scratch.</span><br>  <span class="hljs-keyword">if</span> (!producerStateManager.isEmpty)<br>    throw <span class="hljs-keyword">new</span> <span class="hljs-constructor">IllegalStateException(<span class="hljs-string">&quot;Producer state must be empty during log initialization&quot;</span>)</span><br><br>  <span class="hljs-comment">// Reload all snapshots into the ProducerStateManager cache, the intermediate ProducerStateManager used</span><br>  <span class="hljs-comment">// during log recovery may have deleted some files without the Log.producerStateManager instance witnessing the</span><br>  <span class="hljs-comment">// deletion.</span><br>  producerStateManager.remove<span class="hljs-constructor">StraySnapshots(<span class="hljs-params">segments</span>.<span class="hljs-params">values</span>()</span>.asScala.map(<span class="hljs-module-access"><span class="hljs-module"><span class="hljs-identifier">_</span>.</span></span>baseOffset).toSeq)<br>  load<span class="hljs-constructor">ProducerState(<span class="hljs-params">logEndOffset</span>, <span class="hljs-params">reloadFromCleanShutdown</span> = <span class="hljs-params">hadCleanShutdown</span>)</span><br><br>  <span class="hljs-comment">// Delete partition metadata file if the version does not support topic IDs.</span><br>  <span class="hljs-comment">// Recover topic ID if present and topic IDs are supported</span><br>  <span class="hljs-keyword">if</span> (partitionMetadataFile.exists<span class="hljs-literal">()</span>) &#123;<br>      <span class="hljs-keyword">if</span> (!keepPartitionMetadataFile)<br>        partitionMetadataFile.delete<span class="hljs-literal">()</span><br>      <span class="hljs-keyword">else</span><br>        topicId = partitionMetadataFile.read<span class="hljs-literal">()</span>.topicId<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p>Log对象的初始化主要分为五个步骤，下面逐个进行分析：</p>
+<ol>
+<li><p><strong>创建分区对应的目录。</strong>假如配置的log.dirs 为 data&#x2F;kafka&#x2F;logs ，Topic 为 test，且只有1个分区，那么该分区日志的路径就是：&#x2F;data&#x2F;kafka&#x2F;logs&#x2F;test-0，即dir&#x3D;&#x2F;data&#x2F;kafka&#x2F;logs&#x2F;test-0</p>
+</li>
+<li><p><strong>初始化LeaderEpochCache对象，并在上面生成的分区目录下创建检查点文件</strong>：<strong>leader-epoch-checkpoint</strong>。</p>
+<p>方法详情如下：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">private</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">initializeLeaderEpochCache</span></span>(): <span class="hljs-type">Unit</span> = lock synchronized &#123;<br>  <span class="hljs-comment">// 创建 Leader Epoch 检查点文件</span><br>  <span class="hljs-keyword">val</span> leaderEpochFile = <span class="hljs-type">LeaderEpochCheckpointFile</span>.newFile(dir)<br><br>  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">newLeaderEpochFileCache</span></span>(): <span class="hljs-type">LeaderEpochFileCache</span> = &#123;<br>    <span class="hljs-keyword">val</span> checkpointFile = <span class="hljs-keyword">new</span> <span class="hljs-type">LeaderEpochCheckpointFile</span>(leaderEpochFile, logDirFailureChannel)<br>    <span class="hljs-keyword">new</span> <span class="hljs-type">LeaderEpochFileCache</span>(topicPartition, () =&gt; logEndOffset, checkpointFile)<br>  &#125;<br><br>  <span class="hljs-comment">// 生成 Leader Epoch Cache 对象</span><br>  <span class="hljs-keyword">if</span> (recordVersion.precedes(<span class="hljs-type">RecordVersion</span>.<span class="hljs-type">V2</span>)) &#123;<br>    <span class="hljs-keyword">val</span> currentCache = <span class="hljs-keyword">if</span> (leaderEpochFile.exists())<br>      <span class="hljs-type">Some</span>(newLeaderEpochFileCache())<br>    <span class="hljs-keyword">else</span><br>      <span class="hljs-type">None</span><br><br>    <span class="hljs-keyword">if</span> (currentCache.exists(_.nonEmpty))<br>      warn(<span class="hljs-string">s&quot;Deleting non-empty leader epoch cache due to incompatible message format <span class="hljs-subst">$recordVersion</span>&quot;</span>)<br><br>    <span class="hljs-type">Files</span>.deleteIfExists(leaderEpochFile.toPath)<br>    leaderEpochCache = <span class="hljs-type">None</span><br>  &#125; <span class="hljs-keyword">else</span> &#123;<br>    leaderEpochCache = <span class="hljs-type">Some</span>(newLeaderEpochFileCache())<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p><strong>加载所有的日志段文件：</strong>在内存中生成对应的LogSegment对象，并返回下一条待写入消息的偏移量，以下是 loadSegments 的实现代码：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">private</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">loadSegments</span></span>(): <span class="hljs-type">Long</span> = &#123;<br>  <span class="hljs-comment">// first do a pass through the files in the log directory and remove any temporary files</span><br>  <span class="hljs-comment">// and find any interrupted swap operations</span><br>  <span class="hljs-comment">// 第一次遍历，移除上次 Failure 遗留下来的各种临时文件(包括.cleaned、.swap、.deleted 文件等)，并找到被中断的交换操作</span><br>  <span class="hljs-keyword">val</span> swapFiles = removeTempFilesAndCollectSwapFiles()<br><br>  <span class="hljs-comment">// Now do a second pass and load all the log and index files.</span><br>  <span class="hljs-comment">// We might encounter legacy log segments with offset overflow (KAFKA-6264). We need to split such segments. When</span><br>  <span class="hljs-comment">// this happens, restart loading segment files from scratch.</span><br>  <span class="hljs-comment">// 第二次遍历，清空所有日志段对象，重建日志段 segments Map 以 及索引文件</span><br>  retryOnOffsetOverflow &#123;<br>    <span class="hljs-comment">// In case we encounter a segment with offset overflow, the retry logic will split it after which we need to retry</span><br>    <span class="hljs-comment">// loading of segments. In that case, we also need to close all segments that could have been left open in previous</span><br>    <span class="hljs-comment">// call to loadSegmentFiles().</span><br>    <span class="hljs-comment">// 关闭所有的日志段对应的日志和索引文件</span><br>    logSegments.foreach(_.close())<br>    <span class="hljs-comment">// 清理segments集合中的日志段对象</span><br>    segments.clear()<br>    <span class="hljs-comment">// 重新加载日志段文件</span><br>    loadSegmentFiles()<br>  &#125;<br><br>  <span class="hljs-comment">// Finally, complete any interrupted swap operations. To be crash-safe,</span><br>  <span class="hljs-comment">// log files that are replaced by the swap segment should be renamed to .deleted</span><br>  <span class="hljs-comment">// before the swap file is restored as the new segment file.</span><br>  <span class="hljs-comment">// 最后，完成所有被中断的交换操作。 为了保证crash-safe，在交换文件恢复为新的段文件之前，被交换段替换的日志文件应重命名为 .deleted</span><br>  <span class="hljs-comment">// 处理有效的.swap文件，即将有效的swap文件对应的日志段添加到Log 的 segments 集合中</span><br>  completeSwapOperations(swapFiles)<br><br>  <span class="hljs-keyword">if</span> (!dir.getAbsolutePath.endsWith(<span class="hljs-type">Log</span>.<span class="hljs-type">DeleteDirSuffix</span>)) &#123;<br>    <span class="hljs-keyword">val</span> nextOffset = retryOnOffsetOverflow &#123;<br>      <span class="hljs-comment">// 恢复日志段对象，然后返回恢复之后的分区日志 LEO 值</span><br>      <span class="hljs-comment">// 处理 broker 节点异常关闭导致的数据异常，需要验证 [recoveryPoint, Long.MaxValue] 中的所有消息，并移除验证失败的消息</span><br>      recoverLog()<br>    &#125;<br><br>    <span class="hljs-comment">// reset the index size of the currently active log segment to allow more entries</span><br>    <span class="hljs-comment">// 然后重置active segment对应的索引文件大小为10M，最后返回下一条待写入消息的偏移量</span><br>    activeSegment.resizeIndexes(config.maxIndexSize)<br>    nextOffset<br>  &#125; <span class="hljs-keyword">else</span> &#123;<br>     <span class="hljs-keyword">if</span> (logSegments.isEmpty) &#123;<br>        addSegment(<span class="hljs-type">LogSegment</span>.open(dir = dir,<br>          baseOffset = <span class="hljs-number">0</span>,<br>          config,<br>          time = time,<br>          initFileSize = <span class="hljs-keyword">this</span>.initFileSize))<br>     &#125;<br>    <span class="hljs-number">0</span><br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这段代码会对分区日志路径遍历两次。</p>
+<ul>
+<li><p>第一次遍历，它会移除上次 Failure 遗留下来的各种临时文件（包括.cleaned、.swap、.deleted文件等），removeTempFilesAndCollectSwapFiles方法实现了这个逻辑：</p>
+</li>
+<li><p>第二次遍历，它会清空所有日志段对象，并且重建日志段 segments Map 以及索引文件</p>
+</li>
+<li><p>执行完两次遍历后，它会完成之前未完成的 swap 操作，即调用 completeSwapOperations 方法。</p>
+</li>
+<li><p>之后再调用recoverLog方法恢复日志</p>
+</li>
+<li><p>最后返回恢复之后的分区日志 LEO 值</p>
+</li>
+</ul>
+<p><strong>第一步， removeTempFilesAndCollectSwapFiles 方法的实现：</strong></p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">private</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">removeTempFilesAndCollectSwapFiles</span></span>(): <span class="hljs-type">Set</span>[<span class="hljs-type">File</span>] = &#123;<br><br>  <span class="hljs-comment">// 用于删除日志文件对应的索引文件</span><br>  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">deleteIndicesIfExist</span></span>(baseFile: <span class="hljs-type">File</span>, suffix: <span class="hljs-type">String</span> = <span class="hljs-string">&quot;&quot;</span>): <span class="hljs-type">Unit</span> = &#123;<br>    info(<span class="hljs-string">s&quot;Deleting index files with suffix <span class="hljs-subst">$suffix</span> for baseFile <span class="hljs-subst">$baseFile</span>&quot;</span>)<br>    <span class="hljs-keyword">val</span> offset = offsetFromFile(baseFile)<br>    <span class="hljs-type">Files</span>.deleteIfExists(<span class="hljs-type">Log</span>.offsetIndexFile(dir, offset, suffix).toPath)<br>    <span class="hljs-type">Files</span>.deleteIfExists(<span class="hljs-type">Log</span>.timeIndexFile(dir, offset, suffix).toPath)<br>    <span class="hljs-type">Files</span>.deleteIfExists(<span class="hljs-type">Log</span>.transactionIndexFile(dir, offset, suffix).toPath)<br>  &#125;<br><br>  <span class="hljs-keyword">val</span> swapFiles = mutable.<span class="hljs-type">Set</span>[<span class="hljs-type">File</span>]()<br>  <span class="hljs-keyword">val</span> cleanFiles = mutable.<span class="hljs-type">Set</span>[<span class="hljs-type">File</span>]()<br>  <span class="hljs-keyword">var</span> minCleanedFileOffset = <span class="hljs-type">Long</span>.<span class="hljs-type">MaxValue</span><br><br>  <span class="hljs-comment">// 遍历分区日志路径下的所有文件</span><br>  <span class="hljs-keyword">for</span> (file &lt;- dir.listFiles <span class="hljs-keyword">if</span> file.isFile) &#123;<br>    <span class="hljs-keyword">if</span> (!file.canRead)<br>      <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-type">IOException</span>(<span class="hljs-string">s&quot;Could not read file <span class="hljs-subst">$file</span>&quot;</span>)<br>    <span class="hljs-keyword">val</span> filename = file.getName<br>    <span class="hljs-keyword">if</span> (filename.endsWith(<span class="hljs-type">DeletedFileSuffix</span>)) &#123;<br>      <span class="hljs-comment">// 以.deleted结尾，说明是上次Failure遗留下来的文件，直接删除</span><br>      debug(<span class="hljs-string">s&quot;Deleting stray temporary file <span class="hljs-subst">$&#123;file.getAbsolutePath&#125;</span>&quot;</span>)<br>      <span class="hljs-type">Files</span>.deleteIfExists(file.toPath)<br>    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (filename.endsWith(<span class="hljs-type">CleanedFileSuffix</span>)) &#123;<br>      <span class="hljs-comment">// 以.cleaned结尾，表示在执行日志压缩过程中宕机，文件中的数据状态不明确，无法正确恢复的文件。</span><br>      <span class="hljs-comment">// 判断该文件名中的偏移量和minCleanedFileOffset 的大小，如果较小，则更新 minCleanedFileOffset</span><br>      minCleanedFileOffset = <span class="hljs-type">Math</span>.min(offsetFromFileName(filename), minCleanedFileOffset)<br>      <span class="hljs-comment">// 将该文件加入待删除的文件集合</span><br>      cleanFiles += file<br>    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (filename.endsWith(<span class="hljs-type">SwapFileSuffix</span>)) &#123;<br>      <span class="hljs-comment">// we crashed in the middle of a swap operation, to recover:</span><br>      <span class="hljs-comment">// if a log, delete the index files, complete the swap operation later</span><br>      <span class="hljs-comment">// if an index just delete the index files, they will be rebuilt</span><br>      <span class="hljs-comment">// 如果该.swap文件原来是索引文件则删除</span><br>      <span class="hljs-comment">// 如果该.swap文件原来是日志文件则加入待恢复的.swap文件集合</span><br>      <span class="hljs-keyword">val</span> baseFile = <span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-type">CoreUtils</span>.replaceSuffix(file.getPath, <span class="hljs-type">SwapFileSuffix</span>, <span class="hljs-string">&quot;&quot;</span>))<br>      info(<span class="hljs-string">s&quot;Found file <span class="hljs-subst">$&#123;file.getAbsolutePath&#125;</span> from interrupted swap operation.&quot;</span>)<br>      <span class="hljs-keyword">if</span> (isIndexFile(baseFile)) &#123;<br>        <span class="hljs-comment">// 删除索引文件</span><br>        deleteIndicesIfExist(baseFile)<br>      &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isLogFile(baseFile)) &#123;<br>        <span class="hljs-comment">// 删除原日志文件对应的索引文件</span><br>        deleteIndicesIfExist(baseFile)<br>        <span class="hljs-comment">// 加入待恢复的.swap文件集合</span><br>        swapFiles += file<br>      &#125;<br>    &#125;<br>  &#125;<br><br>  <span class="hljs-comment">// KAFKA-6264: Delete all .swap files whose base offset is greater than the minimum .cleaned segment offset. Such .swap</span><br>  <span class="hljs-comment">// files could be part of an incomplete split operation that could not complete. See Log#splitOverflowedSegment</span><br>  <span class="hljs-comment">// for more details about the split operation.</span><br>  <span class="hljs-comment">// 从待恢复swap集合中找出那些起始位移值大于minCleanedFileOffset值的文件，直接删掉这些无效的.swap文件</span><br>  <span class="hljs-keyword">val</span> (invalidSwapFiles, validSwapFiles) = swapFiles.partition(file =&gt; offsetFromFile(file) &gt;= minCleanedFileOffset)<br>  invalidSwapFiles.foreach &#123; file =&gt;<br>    debug(<span class="hljs-string">s&quot;Deleting invalid swap file <span class="hljs-subst">$&#123;file.getAbsoluteFile&#125;</span> minCleanedFileOffset: <span class="hljs-subst">$minCleanedFileOffset</span>&quot;</span>)<br>    <span class="hljs-keyword">val</span> baseFile = <span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-type">CoreUtils</span>.replaceSuffix(file.getPath, <span class="hljs-type">SwapFileSuffix</span>, <span class="hljs-string">&quot;&quot;</span>))<br>    deleteIndicesIfExist(baseFile, <span class="hljs-type">SwapFileSuffix</span>)<br>    <span class="hljs-type">Files</span>.deleteIfExists(file.toPath)<br>  &#125;<br><br>  <span class="hljs-comment">// Now that we have deleted all .swap files that constitute an incomplete split operation, let&#x27;s delete all .clean files</span><br>  <span class="hljs-comment">// 清除所有待删除文件集合中的文件</span><br>  cleanFiles.foreach &#123; file =&gt;<br>    debug(<span class="hljs-string">s&quot;Deleting stray .clean file <span class="hljs-subst">$&#123;file.getAbsolutePath&#125;</span>&quot;</span>)<br>    <span class="hljs-type">Files</span>.deleteIfExists(file.toPath)<br>  &#125;<br><br>  <span class="hljs-comment">//最后返回当前有效的.swap文件集合</span><br>  validSwapFiles<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这一步会遍历当前 topic 分区目录下的文件，并处理标记为 deleted、cleaned 和 swap 的文件（以这些名称作为文件后缀名）。这 3 类文件对应的含义为：</p>
+<ul>
+<li><strong>deleted 文件</strong> ：标识需要被删除的 log 文件和 index 文件。</li>
+<li><strong>cleaned 文件</strong> ：在执行日志压缩过程中宕机，文件中的数据状态不明确，无法正确恢复的文件。</li>
+<li><strong>swap 文件 ：</strong>完成执行日志压缩后的文件，但是在替换原文件时宕机。</li>
+</ul>
+<p>这里介绍下日志的清理策略有delete 和 compact 两种，在进行compact日志压缩时，会将保留的消息先写到一个.cleaned文件中，如：xxx.log.cleaned。当压缩过后，会将后缀修改为.swap。最后删除原始日志文件后，再去掉.swap后缀，形成xxx.log日志文件。</p>
+<p><strong>第二步：关闭所有日志段对应的日志和索引文件，清理存储日志段对应的segments集合，然后重新加载日志段文件：</strong></p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs scala">retryOnOffsetOverflow &#123;<br>  <span class="hljs-comment">// In case we encounter a segment with offset overflow, the retry logic will split it after which we need to retry</span><br>  <span class="hljs-comment">// loading of segments. In that case, we also need to close all segments that could have been left open in previous</span><br>  <span class="hljs-comment">// call to loadSegmentFiles().</span><br>  <span class="hljs-comment">// 关闭所有的日志段对应的日志和索引文件</span><br>  logSegments.foreach(_.close())<br>  <span class="hljs-comment">// 清理segments集合中的日志段对象</span><br>  segments.clear()<br>  <span class="hljs-comment">// 重新加载日志段文件</span><br>  loadSegmentFiles()<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这里主要看 loadSegmentFiles 方法：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">private</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">loadSegmentFiles</span></span>(): <span class="hljs-type">Unit</span> = &#123;<br>  <span class="hljs-comment">// load segments in ascending order because transactional data from one segment may depend on the</span><br>  <span class="hljs-comment">// segments that come before it</span><br>  <span class="hljs-keyword">for</span> (file &lt;- dir.listFiles.sortBy(_.getName) <span class="hljs-keyword">if</span> file.isFile) &#123;<br>    <span class="hljs-keyword">if</span> (isIndexFile(file)) &#123;<br>      <span class="hljs-comment">// if it is an index file, make sure it has a corresponding .log file</span><br>      <span class="hljs-comment">// 获取索引文件名中的起始偏移量</span><br>      <span class="hljs-keyword">val</span> offset = offsetFromFile(file)<br>      <span class="hljs-comment">// 获取起始偏移量对应的日志文件，如果日志文件不存在，则删除该索引文件</span><br>      <span class="hljs-keyword">val</span> logFile = <span class="hljs-type">Log</span>.logFile(dir, offset)<br>      <span class="hljs-keyword">if</span> (!logFile.exists) &#123;<br>        warn(<span class="hljs-string">s&quot;Found an orphaned index file <span class="hljs-subst">$&#123;file.getAbsolutePath&#125;</span>, with no corresponding log file.&quot;</span>)<br>        <span class="hljs-type">Files</span>.deleteIfExists(file.toPath)<br>      &#125;<br>    &#125; <span class="hljs-keyword">else</span> <span class="hljs-keyword">if</span> (isLogFile(file)) &#123;<br>      <span class="hljs-comment">// if it&#x27;s a log file, load the corresponding log segment</span><br>      <span class="hljs-keyword">val</span> baseOffset = offsetFromFile(file)<br>      <span class="hljs-comment">// 标记日志对应的时间戳索引文件是否存在，如果存在为false</span><br>      <span class="hljs-keyword">val</span> timeIndexFileNewlyCreated = !<span class="hljs-type">Log</span>.timeIndexFile(dir, baseOffset).exists()<br>      <span class="hljs-keyword">val</span> segment = <span class="hljs-type">LogSegment</span>.open(dir = dir,<br>        baseOffset = baseOffset,<br>        config,<br>        time = time,<br>        fileAlreadyExists = <span class="hljs-literal">true</span>)<br><br>      <span class="hljs-comment">//如果偏移量索引文件存在，看是否需要重建对应的时间戳索引文件，并创建已中止事务索引文件</span><br>      <span class="hljs-comment">//如果偏移量索引文件不存在，则抛异常</span><br>      <span class="hljs-keyword">try</span> segment.sanityCheck(timeIndexFileNewlyCreated)<br>      <span class="hljs-keyword">catch</span> &#123;<br>        <span class="hljs-keyword">case</span> _: <span class="hljs-type">NoSuchFileException</span> =&gt;<br>          error(<span class="hljs-string">s&quot;Could not find offset index file corresponding to log file <span class="hljs-subst">$&#123;segment.log.file.getAbsolutePath&#125;</span>, &quot;</span> +<br>            <span class="hljs-string">&quot;recovering segment and rebuilding index files...&quot;</span>)<br>          recoverSegment(segment)<br>        <span class="hljs-keyword">case</span> e: <span class="hljs-type">CorruptIndexException</span> =&gt;<br>          warn(<span class="hljs-string">s&quot;Found a corrupted index file corresponding to log file <span class="hljs-subst">$&#123;segment.log.file.getAbsolutePath&#125;</span> due &quot;</span> +<br>            <span class="hljs-string">s&quot;to <span class="hljs-subst">$&#123;e.getMessage&#125;</span>&#125;, recovering segment and rebuilding index files...&quot;</span>)<br>          recoverSegment(segment)<br>      &#125;<br>      <span class="hljs-comment">// 将这个日志段添加到segments集合中</span><br>      addSegment(segment)<br>    &#125;<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这一步，会遍历分区目录下的文件：</p>
+<ul>
+<li><p>如果是索引文件，看对应的日志文件是否存在，不存在则删除该索引文件</p>
+</li>
+<li><p>如果是日志文件，则构建对应的LogSegment对象</p>
+</li>
+<li><ul>
+<li>如果对应的偏移量索引文件存在，则看是否需要重建时间戳索引文件。并创建已中止事务索引文件</li>
+<li>如果对应的偏移量索引文件不存在，则直接抛异常</li>
+</ul>
+</li>
+<li><p>将生成的LogSegment对象放入Log对象的segments集合</p>
+</li>
+</ul>
+<p>前两步图示说明：</p>
+<img src="/2022/08/30/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E5%AF%B9%E8%B1%A1%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/modb_20211012_18a8ab4a-2b3f-11ec-94a3-fa163eb4f6be.png" srcset="/img/loading.gif" lazyload class="" title="img">
+
+<p><strong>第三步：处理有效的.swap后缀的日志文件，将压缩后的LogSegment对象放入segments集合，并在集合中移除压缩前的LogSegment对象和删除对应的日志和索引文件</strong></p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">private</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">completeSwapOperations</span></span>(swapFiles: <span class="hljs-type">Set</span>[<span class="hljs-type">File</span>]): <span class="hljs-type">Unit</span> = &#123;<br>  <span class="hljs-keyword">for</span> (swapFile &lt;- swapFiles) &#123;<br>    <span class="hljs-keyword">val</span> logFile = <span class="hljs-keyword">new</span> <span class="hljs-type">File</span>(<span class="hljs-type">CoreUtils</span>.replaceSuffix(swapFile.getPath, <span class="hljs-type">SwapFileSuffix</span>, <span class="hljs-string">&quot;&quot;</span>))<br>    <span class="hljs-keyword">val</span> baseOffset = offsetFromFile(logFile)<br>    <span class="hljs-keyword">val</span> swapSegment = <span class="hljs-type">LogSegment</span>.open(swapFile.getParentFile,<br>      baseOffset = baseOffset,<br>      config,<br>      time = time,<br>      fileSuffix = <span class="hljs-type">SwapFileSuffix</span>)<br>    info(<span class="hljs-string">s&quot;Found log file <span class="hljs-subst">$&#123;swapFile.getPath&#125;</span> from interrupted swap operation, repairing.&quot;</span>)<br>    <span class="hljs-comment">// 恢复日志段，重建索引文件，并校验日志中消息的合法性</span><br>    recoverSegment(swapSegment)<br><br>    <span class="hljs-comment">// We create swap files for two cases:</span><br>    <span class="hljs-comment">// (1) Log cleaning where multiple segments are merged into one, and</span><br>    <span class="hljs-comment">// (2) Log splitting where one segment is split into multiple.</span><br>    <span class="hljs-comment">//</span><br>    <span class="hljs-comment">// Both of these mean that the resultant swap segments be composed of the original set, i.e. the swap segment</span><br>    <span class="hljs-comment">// must fall within the range of existing segment(s). If we cannot find such a segment, it means the deletion</span><br>    <span class="hljs-comment">// of that segment was successful. In such an event, we should simply rename the .swap to .log without having to</span><br>    <span class="hljs-comment">// do a replace with an existing segment.</span><br>    <span class="hljs-comment">// 确认之前删除日志段是否成功，是否还存在老的日志段文件</span><br>    <span class="hljs-keyword">val</span> oldSegments = logSegments(swapSegment.baseOffset, swapSegment.readNextOffset).filter &#123; segment =&gt;<br>      segment.readNextOffset &gt; swapSegment.baseOffset<br>    &#125;<br>    <span class="hljs-comment">// 如果存在，直接把.swap文件重命名成.log</span><br>    replaceSegments(<span class="hljs-type">Seq</span>(swapSegment), oldSegments.toSeq, isRecoveredSwapFile = <span class="hljs-literal">true</span>)<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在完成对日志数据的压缩操作后，会将压缩的结果先保存为 swap 文件（以“.swap”作为文件后缀），并最终替换压缩前的日志文件，所以 swap 文件中的数据都是完整的，只需要移除对应的“.swap”后缀，并构建对应的 LogSegment 对象即可。</p>
+<p> 但是这里不能简单的将对应的 LogSegment 对象记录到segments中就行了，因为segments中还存在着压缩前的原文件对应的 LogSegment 对象集合，所以需要先将这些 LogSegment 对象集合及其对应的 log 文件和索引文件删除，这就是replaceSegments方法的主要逻辑。</p>
+<p><strong>第四步：校验加载的数据，并返回下一条待写入消息的偏移量：</strong></p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">if</span> (!dir.getAbsolutePath.endsWith(<span class="hljs-type">Log</span>.<span class="hljs-type">DeleteDirSuffix</span>)) &#123;<br>  <span class="hljs-keyword">val</span> nextOffset = retryOnOffsetOverflow &#123;<br>    <span class="hljs-comment">// 恢复日志段对象，然后返回恢复之后的分区日志 LEO 值</span><br>    <span class="hljs-comment">// 处理 broker 节点异常关闭导致的数据异常，需要验证 [recoveryPoint, Long.MaxValue] 中的所有消息，并移除验证失败的消息</span><br>    recoverLog()<br>  &#125;<br><br>  <span class="hljs-comment">// reset the index size of the currently active log segment to allow more entries</span><br>  <span class="hljs-comment">// 然后重置active segment对应的索引文件大小为10M，最后返回下一条待写入消息的偏移量</span><br>  activeSegment.resizeIndexes(config.maxIndexSize)<br>  nextOffset<br>&#125; <span class="hljs-keyword">else</span> &#123;<br>   <span class="hljs-keyword">if</span> (logSegments.isEmpty) &#123;<br>      addSegment(<span class="hljs-type">LogSegment</span>.open(dir = dir,<br>        baseOffset = <span class="hljs-number">0</span>,<br>        config,<br>        time = time,<br>        initFileSize = <span class="hljs-keyword">this</span>.initFileSize))<br>   &#125;<br>  <span class="hljs-number">0</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>根据是否存在.kafka_cleanshutdown 文件来判断broker是否异常关闭。如果异常关闭，需要对恢复点recoverPoint之后的数据进行校验，如果不完整则丢弃。</p>
+<p>如果之前未加载到任何的日志段对象，则对应的segments为空，为了保证segments正常工作，需要创建一个LogSegment对象作为active segment，其起始偏移量就是Log对象的LogStartOffset。如果segments不为空，则最后一个对象为active segment。主要逻辑在 recoverLog() 方法中：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">private</span>[log] <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">recoverLog</span></span>(): <span class="hljs-type">Long</span> = &#123;<br>  <span class="hljs-comment">/** return the log end offset if valid */</span><br>  <span class="hljs-comment">// 如果LEO 比 日志的 LogStartOffset 还小，则删除所有日志段</span><br>  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">deleteSegmentsIfLogStartGreaterThanLogEnd</span></span>(): <span class="hljs-type">Option</span>[<span class="hljs-type">Long</span>] = &#123;<br>    <span class="hljs-keyword">if</span> (logSegments.nonEmpty) &#123;<br>      <span class="hljs-keyword">val</span> logEndOffset = activeSegment.readNextOffset<br>      <span class="hljs-keyword">if</span> (logEndOffset &gt;= logStartOffset)<br>        <span class="hljs-type">Some</span>(logEndOffset)<br>      <span class="hljs-keyword">else</span> &#123;<br>        warn(<span class="hljs-string">s&quot;Deleting all segments because logEndOffset (<span class="hljs-subst">$logEndOffset</span>) is smaller than logStartOffset (<span class="hljs-subst">$logStartOffset</span>). &quot;</span> +<br>          <span class="hljs-string">&quot;This could happen if segment files were deleted from the file system.&quot;</span>)<br>        removeAndDeleteSegments(logSegments, asyncDelete = <span class="hljs-literal">true</span>, <span class="hljs-type">LogRecovery</span>)<br>        leaderEpochCache.foreach(_.clearAndFlush())<br>        producerStateManager.truncateFullyAndStartAt(logStartOffset)<br>        <span class="hljs-type">None</span><br>      &#125;<br>    &#125; <span class="hljs-keyword">else</span> <span class="hljs-type">None</span><br>  &#125;<br><br>  <span class="hljs-comment">// if we have the clean shutdown marker, skip recovery</span><br>  <span class="hljs-comment">//判断是否存在.kafka_cleanshutdown 文件，如果存在则说明broker异常关闭</span><br>  <span class="hljs-comment">//需要对recoveryPoint恢复点之后的数据进行校验，如果不完整则丢弃</span><br>  <span class="hljs-keyword">if</span> (!hadCleanShutdown) &#123;<br>    <span class="hljs-comment">// 获取包含恢复点之后消息的 日志段对象集合</span><br>    <span class="hljs-keyword">val</span> unflushed = logSegments(<span class="hljs-keyword">this</span>.recoveryPoint, <span class="hljs-type">Long</span>.<span class="hljs-type">MaxValue</span>).iterator<br>    <span class="hljs-keyword">var</span> truncated = <span class="hljs-literal">false</span><br><br>    <span class="hljs-keyword">while</span> (unflushed.hasNext &amp;&amp; !truncated) &#123;<br>      <span class="hljs-keyword">val</span> segment = unflushed.next()<br>      info(<span class="hljs-string">s&quot;Recovering unflushed segment <span class="hljs-subst">$&#123;segment.baseOffset&#125;</span>&quot;</span>)<br>      <span class="hljs-keyword">val</span> truncatedBytes =<br>        <span class="hljs-keyword">try</span> &#123;<br>          recoverSegment(segment, leaderEpochCache)<br>        &#125; <span class="hljs-keyword">catch</span> &#123;<br>          <span class="hljs-keyword">case</span> _: <span class="hljs-type">InvalidOffsetException</span> =&gt;<br>            <span class="hljs-keyword">val</span> startOffset = segment.baseOffset<br>            warn(<span class="hljs-string">&quot;Found invalid offset during recovery. Deleting the corrupt segment and &quot;</span> +<br>              <span class="hljs-string">s&quot;creating an empty one with starting offset <span class="hljs-subst">$startOffset</span>&quot;</span>)<br>            segment.truncateTo(startOffset)<br>        &#125;<br>      <span class="hljs-comment">// 如果有无效的消息，直接删除所有的未刷写日志段</span><br>      <span class="hljs-keyword">if</span> (truncatedBytes &gt; <span class="hljs-number">0</span>) &#123;<br>        <span class="hljs-comment">// we had an invalid message, delete all remaining log</span><br>        warn(<span class="hljs-string">s&quot;Corruption found in segment <span class="hljs-subst">$&#123;segment.baseOffset&#125;</span>, truncating to offset <span class="hljs-subst">$&#123;segment.readNextOffset&#125;</span>&quot;</span>)<br>        removeAndDeleteSegments(unflushed.toList,<br>          asyncDelete = <span class="hljs-literal">true</span>,<br>          reason = <span class="hljs-type">LogRecovery</span>)<br>        truncated = <span class="hljs-literal">true</span><br>      &#125;<br>    &#125;<br>  &#125;<br><br>  <span class="hljs-keyword">val</span> logEndOffsetOption = deleteSegmentsIfLogStartGreaterThanLogEnd()<br><br>  <span class="hljs-comment">//执行完上面的逻辑，如果日志段集合已经为空</span><br>  <span class="hljs-keyword">if</span> (logSegments.isEmpty) &#123;<br>    <span class="hljs-comment">// no existing segments, create a new mutable segment beginning at logStartOffset</span><br>    <span class="hljs-comment">// 至少要有一个active 日志段，上面全部删除了，所以要创建一个新的日志段，起始位移就是日志的LogStartOffset，然后放入segments集合</span><br>    addSegment(<span class="hljs-type">LogSegment</span>.open(dir = dir,<br>      baseOffset = logStartOffset,<br>      config,<br>      time = time,<br>      initFileSize = <span class="hljs-keyword">this</span>.initFileSize,<br>      preallocate = config.preallocate))<br>  &#125;<br><br>  <span class="hljs-comment">// Update the recovery point if there was a clean shutdown and did not perform any changes to</span><br>  <span class="hljs-comment">// the segment. Otherwise, we just ensure that the recovery point is not ahead of the log end</span><br>  <span class="hljs-comment">// offset. To ensure correctness and to make it easier to reason about, it&#x27;s best to only advance</span><br>  <span class="hljs-comment">// the recovery point in flush(Long). If we advanced the recovery point here, we could skip recovery for</span><br>  <span class="hljs-comment">// unflushed segments if the broker crashed after we checkpoint the recovery point and before we flush the</span><br>  <span class="hljs-comment">// segment.</span><br>  <span class="hljs-comment">// 更新恢复点信息，返回恢复点</span><br>  (hadCleanShutdown, logEndOffsetOption) <span class="hljs-keyword">match</span> &#123;<br>    <span class="hljs-keyword">case</span> (<span class="hljs-literal">true</span>, <span class="hljs-type">Some</span>(logEndOffset)) =&gt;<br>      recoveryPoint = logEndOffset<br>      logEndOffset<br>    <span class="hljs-keyword">case</span> _ =&gt;<br>      <span class="hljs-keyword">val</span> logEndOffset = logEndOffsetOption.getOrElse(activeSegment.readNextOffset)<br>      recoveryPoint = <span class="hljs-type">Math</span>.min(recoveryPoint, logEndOffset)<br>      logEndOffset<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>第五步：然后重置active segment对应的索引文件大小为10M，最后返回下一条待写入消息的偏移量：</strong></p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs scala">activeSegment.resizeIndexes(config.maxIndexSize)<br>nextOffset<br></code></pre></td></tr></table></figure>
+</li>
+<li><p><strong>更新nextOffsetMetadata 和 LogStartOffset：</strong></p>
+</li>
+<li><p><strong>更新LeaderEpochCache，清除无效数据</strong></p>
+</li>
+</ol>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><strong>整个日志对象的初始化流程可以总结为以下几步：</strong></p>
+<ul>
+<li><p><strong>创建分区目录</strong></p>
+</li>
+<li><p><strong>创建LeaderEpochCache对象并生成leader-epoch-checkpoint检查点文件</strong></p>
+</li>
+<li><p><strong>加载日志段文件，在内存中构建日志段对象</strong></p>
+</li>
+<li><ul>
+<li><strong>删除临时文件，返回待恢复文件集合</strong></li>
+<li><strong>重新加载日志段文件，生成日志段对象并放入Log对应的集合segments</strong></li>
+<li><strong>处理待恢复文件集合</strong></li>
+<li><strong>校验消息，如果未加载任何日志段则生成一个空的日志段对象</strong></li>
+<li><strong>重置active segment 的索引文件大小为10M，返回下一条待插入消息偏移量</strong></li>
+</ul>
+</li>
+<li><p><strong>更新nextOffsetMetadata 和 LogStartOffset</strong></p>
+</li>
+<li><p><strong>更新leaderEpochCache，清除无效数据</strong></p>
+</li>
+</ul>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Kafka/">Kafka</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Kafka/">Kafka</a>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">消息队列</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2022/08/31/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%B8%B8%E8%A7%81%E6%93%8D%E4%BD%9C/">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Kafka源码解析-日志对象的常见操作</span>
+                        <span class="visible-mobile">上一篇</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/08/29/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E6%AE%B5%E8%AF%BB%E5%86%99%E6%95%B0%E6%8D%AE%E7%9A%84%E6%B5%81%E7%A8%8B/">
+                        <span class="hidden-mobile">Kafka源码解析-日志段读写数据的流程</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/tocbot@4.12.3/dist/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4.3.1/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js" ></script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>

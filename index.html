@@ -180,6 +180,130 @@
     
     
       <div class="col-12 col-md-4 m-auto index-img">
+        <a href="/2022/08/31/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%B8%B8%E8%A7%81%E6%93%8D%E4%BD%9C/" target="_self">
+          <img src="/img/Surface%20Lineup%202020.jpg" srcset="/img/loading.gif" lazyload alt="Kafka源码解析-日志对象的常见操作">
+        </a>
+      </div>
+    
+    <article class="col-12 col-md-8 mx-auto index-info">
+      <h1 class="index-header">
+        
+        <a href="/2022/08/31/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%B8%B8%E8%A7%81%E6%93%8D%E4%BD%9C/" target="_self">
+          Kafka源码解析-日志对象的常见操作
+        </a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/2022/08/31/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E5%AF%B9%E8%B1%A1%E7%9A%84%E5%B8%B8%E8%A7%81%E6%93%8D%E4%BD%9C/" target="_self">
+          
+          
+            
+          
+          Kafka源码解析-日志对象的常见操作概述Log类用于管理服务端日志相关的各种操作， 这里把Log 的常见操作分为 4 大部分：
+
+日志段管理：滚动生成新日志段、组织并管理分区下的所有日志段等
+关键位移值管理：日志定义了很多重要的位移值，如LogStartOffset、LEO等
+读写操作：进行日志的读写
+高水位操作管理：定义了对于高水位值的各种操作，包括更新和读取
+
+高水位管理操作定义源码中日志对
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-08-31 15:20" pubdate>
+              2022-08-31
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-category"></i>
+            
+              <a href="/categories/Kafka/">Kafka</a>
+            
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/Kafka/">Kafka</a>
+            
+              <a href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">消息队列</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+      <div class="col-12 col-md-4 m-auto index-img">
+        <a href="/2022/08/30/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E5%AF%B9%E8%B1%A1%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/" target="_self">
+          <img src="/img/Surface%20Studio%202.jpg" srcset="/img/loading.gif" lazyload alt="Kafka源码解析-日志对象初始化流程">
+        </a>
+      </div>
+    
+    <article class="col-12 col-md-8 mx-auto index-info">
+      <h1 class="index-header">
+        
+        <a href="/2022/08/30/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E5%AF%B9%E8%B1%A1%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/" target="_self">
+          Kafka源码解析-日志对象初始化流程
+        </a>
+      </h1>
+
+      <p class="index-excerpt">
+        <a href="/2022/08/30/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E5%AF%B9%E8%B1%A1%E5%88%9D%E5%A7%8B%E5%8C%96%E6%B5%81%E7%A8%8B/" target="_self">
+          
+          
+            
+          
+          Kafka源码解析-日志对象初始化流程Log 对象源码结构Kafka 每个分区在磁盘上对应一个物理目录，同时对应一个Log对象。在进行数据存储时，一个分区的数据会划分成多个日志段进行存储，多个日志段由分区对应的Log对象进行管理。
+在服务端启动时，会初始化Log对象并读取磁盘上的日志段文件，然后在内存中生成对应的LogSegment对象交由Log对象进行管理。本篇文章将分析Log对象是如何进行初始
+        </a>
+      </p>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2022-08-30 17:08" pubdate>
+              2022-08-30
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-category"></i>
+            
+              <a href="/categories/Kafka/">Kafka</a>
+            
+          </div>
+        
+        
+          <div class="post-meta">
+            <i class="iconfont icon-tags"></i>
+            
+              <a href="/tags/Kafka/">Kafka</a>
+            
+              <a href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">消息队列</a>
+            
+          </div>
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+      <div class="col-12 col-md-4 m-auto index-img">
         <a href="/2022/08/29/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E6%97%A5%E5%BF%97%E6%AE%B5%E8%AF%BB%E5%86%99%E6%95%B0%E6%8D%AE%E7%9A%84%E6%B5%81%E7%A8%8B/" target="_self">
           <img src="/img/Surface%20Studio%20(Mountains).jpg" srcset="/img/loading.gif" lazyload alt="Kafka源码解析-日志段读写数据的流程">
         </a>
@@ -229,6 +353,8 @@
             <i class="iconfont icon-tags"></i>
             
               <a href="/tags/Kafka/">Kafka</a>
+            
+              <a href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">消息队列</a>
             
           </div>
         
@@ -650,138 +776,11 @@ Pause 容器，这时每个 Pod 都会有的一个根容器，它的作用有两
     </article>
   </div>
 
-  <div class="row mx-auto index-card">
-    
-    
-      <div class="col-12 col-md-4 m-auto index-img">
-        <a href="/2021/08/18/Kubernetes-%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" target="_self">
-          <img src="/img/Surface%20Laptop%202%20-%20Black.jpg" srcset="/img/loading.gif" lazyload alt="Kubernetes-资源管理">
-        </a>
-      </div>
-    
-    <article class="col-12 col-md-8 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2021/08/18/Kubernetes-%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" target="_self">
-          Kubernetes-资源管理
-        </a>
-      </h1>
-
-      <p class="index-excerpt">
-        <a href="/2021/08/18/Kubernetes-%E8%B5%84%E6%BA%90%E7%AE%A1%E7%90%86/" target="_self">
-          
-          
-            
-          
-          Kubernetes-资源管理1. 资源管理介绍在 Kubernetes 中，所有的内容都抽象为资源，用户需要通过操作资源来管理 Kubernetes。
-
-Kubernetes 的本质就是一个集群系统，用户可以在集群中部署各种服务。所谓的部署服务，其实就是在 Kubernetes集群中运行一个个的容器，并将指定的程序跑在容器中。
-Kubernetes 的最小管理单元是 Pod 而不是容器，所以只能
-        </a>
-      </p>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2021-08-18 16:00" pubdate>
-              2021-08-18
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-category"></i>
-            
-              <a href="/categories/Kubernetes/">Kubernetes</a>
-            
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/Kubernetes/">Kubernetes</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-      <div class="col-12 col-md-4 m-auto index-img">
-        <a href="/2021/08/18/Kubernetes-%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" target="_self">
-          <img src="/img/Surface%20Hub%202%20(Wave).jpg" srcset="/img/loading.gif" lazyload alt="Kubernetes-集群搭建">
-        </a>
-      </div>
-    
-    <article class="col-12 col-md-8 mx-auto index-info">
-      <h1 class="index-header">
-        
-        <a href="/2021/08/18/Kubernetes-%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" target="_self">
-          Kubernetes-集群搭建
-        </a>
-      </h1>
-
-      <p class="index-excerpt">
-        <a href="/2021/08/18/Kubernetes-%E9%9B%86%E7%BE%A4%E6%90%AD%E5%BB%BA/" target="_self">
-          
-          
-            
-          
-          Kubernetes-集群搭建1. 环境规划1.1 集群类型
-Kubernetes集群大致分为两类：一主多从和多主多从。
-
-一主多从：一个Master节点和多台Node节点，搭建简单，但是有单机故障风险，适合用于测试环境。
-
-多主多从：多台Master和多台Node节点，搭建麻烦，安全性高，适合用于生产环境。
-
-
-
-
-为了测试方便，本次搭建的是一主多从类型的集群
-1.2 安装方式
-kubernet
-        </a>
-      </p>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2021-08-18 10:51" pubdate>
-              2021-08-18
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-category"></i>
-            
-              <a href="/categories/Kubernetes/">Kubernetes</a>
-            
-          </div>
-        
-        
-          <div class="post-meta">
-            <i class="iconfont icon-tags"></i>
-            
-              <a href="/tags/Kubernetes/">Kubernetes</a>
-            
-          </div>
-        
-      </div>
-    </article>
-  </div>
-
 
 
   <nav aria-label="navigation">
     <span class="pagination" id="pagination">
-      <span class="page-number current">1</span><a class="page-number" href="/page/2/#board">2</a><a class="extend next" rel="next" href="/page/2/#board"><i class="iconfont icon-arrowright"></i></a>
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/#board">2</a><a class="page-number" href="/page/3/#board">3</a><a class="extend next" rel="next" href="/page/2/#board"><i class="iconfont icon-arrowright"></i></a>
     </span>
   </nav>
 
