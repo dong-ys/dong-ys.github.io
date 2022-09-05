@@ -242,7 +242,7 @@
 </li>
 </ul>
 <p>这些类的关系如下图所示：</p>
-<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/image-20220902105725347.png" srcset="/img/loading.gif" lazyload class="" title="image-20220902105725347">
+<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/image-20220902105725347.png" srcset="/img/loading.gif" lazyload class="">
 
 <p>其中，OffsetIndex、TimeIndex 和 TransactionIndex 都继承了 AbstractIndex 类，而上层的 LazyIndex 仅仅是包装了一个 AbstractIndex 的实现类，用于延迟加载。</p>
 <h2 id="索引文件结构"><a href="#索引文件结构" class="headerlink" title="索引文件结构"></a>索引文件结构</h2><h3 id="AbstractIndex-代码结构"><a href="#AbstractIndex-代码结构" class="headerlink" title="AbstractIndex 代码结构"></a>AbstractIndex 代码结构</h3><p>先看一下 AbstractIndex 的定义：</p>
@@ -262,12 +262,12 @@
 <h3 id="OffsetIndex结构"><a href="#OffsetIndex结构" class="headerlink" title="OffsetIndex结构"></a>OffsetIndex结构</h3><p>对于偏移量索引文件，保存的是 <strong>&lt;相对偏移量，物理地址&gt;</strong> 的对应关系，文件中的相对偏移量是单调递增的。</p>
 <p>查询<strong>指定偏移量</strong>对应的消息时，使用<strong>改进的二分查找算法</strong>来快速定位偏移量的位置，如果指定的偏移量不在索引文件中，则会返回文件中小于指定偏移量的最大偏移量及对应的物理地址，该逻辑通过OffsetIndex.lookup()方法实现。</p>
 <p>偏移量索引文件的索引项结构如下图所示，每个索引项记录了相对偏移量relativeOffset和对应消息的第一个字节在日志段文件中的物理地址position，共占用8个字节。</p>
-<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/modb_20211012_1a8862f2-2b3f-11ec-94a3-fa163eb4f6be.png" srcset="/img/loading.gif" lazyload class="" title="img">
+<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/modb_20211012_1a8862f2-2b3f-11ec-94a3-fa163eb4f6be.png" srcset="/img/loading.gif" lazyload class="">
 
 <p>为什么使用相对偏移量？这样可以节约存储空间。每条消息的<strong>绝对偏移量</strong>占用8个字节，而<strong>相对偏移量</strong>只占用4个字节（relativeOffset&#x3D;offset-baseOffset）。在日志段文件滚动的条件中，有一个是：追加消息的最大偏移量和当前日志段的baseOffset的差值大于Int.MaxValue，因为如果大于这个值，4个字节就无法存储相对偏移量了。</p>
 <p><strong>偏移量索引文件的查找原理：</strong></p>
 <p>假设要查找偏移量为230的消息，查找过程如下：</p>
-<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/modb_20211012_1aa37880-2b3f-11ec-94a3-fa163eb4f6be.png" srcset="/img/loading.gif" lazyload class="" title="img">
+<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/modb_20211012_1aa37880-2b3f-11ec-94a3-fa163eb4f6be.png" srcset="/img/loading.gif" lazyload class="">
 
 <ul>
 <li>首先找到baseOffset&#x3D;217的日志段文件（这里使用了跳跃表的结构来加速查找）</li>
@@ -279,11 +279,11 @@
 <h3 id="TimeIndex结构"><a href="#TimeIndex结构" class="headerlink" title="TimeIndex结构"></a>TimeIndex结构</h3><p>对于时间戳索引文件，保存的是 <strong>&lt;时间戳，相对偏移量&gt;</strong> 的对应关系，文件中的时间戳和相对偏移量都是单调递增的。</p>
 <p>查询<strong>指定时间戳</strong>对应的消息时， 需要配合偏移量索引文件进行查找。首先通过改进的二分查找在时间戳索引文件中找到不大于目标时间戳的索引项，然后根据索引项的相对偏移量在偏移量索引文件中查找，查找方式就是上面指定偏移量的方式。 </p>
 <p>时间戳索引文件的索引项结构如下图所示，每个索引项记录了时间戳timestamp和相对偏移量relativeOffset的对应关系，共占用12个字节。</p>
-<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/modb_20211012_1afe0a02-2b3f-11ec-94a3-fa163eb4f6be-20220902112958181.png" srcset="/img/loading.gif" lazyload class="" title="img">
+<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/modb_20211012_1afe0a02-2b3f-11ec-94a3-fa163eb4f6be-20220902112958181.png" srcset="/img/loading.gif" lazyload class="">
 
 <p><strong>时间戳索引文件的查找原理：</strong></p>
 <p>假设要查找时间戳为1540的消息，查找过程如下（这里时间戳只是一个示意值）：</p>
-<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/modb_20211012_1b2d6a0e-2b3f-11ec-94a3-fa163eb4f6be.png" srcset="/img/loading.gif" lazyload class="" title="img">
+<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/modb_20211012_1b2d6a0e-2b3f-11ec-94a3-fa163eb4f6be.png" srcset="/img/loading.gif" lazyload class="">
 
 <ul>
 <li>将要查找的时间戳1540和每个日志段的最大时间戳逐一对比，直到找到最大时间戳不小于1540的日志段。（日志段的最大时间戳：获取时间戳索引文件最后一个索引项的时间戳，如果大于0，取该值；否则取日志段的最近修改时间）</li>
@@ -335,7 +335,7 @@
 <p>大多数操作系统使用页缓存来实现内存映射，而目前几乎所有的操作系统都使用 LRU（Least Recently Used）或类似于 LRU 的机制来管理页缓存。Kafka 写入索引文件的方式是在文件末尾追加写入，而几乎所有的索引查询都集中在索引的尾部。这么来看的话，LRU 机制是非常适合 Kafka 的索引访问场景的。</p>
 <p>但这里有个问题是，当 Kafka 在查询索引的时候，原版的二分查找算法并没有考虑到缓存的问题，因此很可能会导致一些不必要的缺页中断（Page Fault）。此时，Kafka 线程会被阻塞，等待对应的索引项从物理磁盘中读出并放入到页缓存中。</p>
 <p>下面我举个例子来说明一下这个情况，在 Kafka 源码注释中也有详细解释如何解决 Page Fault 问题。假设 Kafka 的某个索引占用了操作系统页缓存 13 个页（Page），如果待查找的位移值位于最后一个页上，也就是 Page 12，那么标准的二分查找算法会依次读取页号 0、6、9、11 和 12，具体的推演流程如下所示：</p>
-<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/image-20220902140008810.png" srcset="/img/loading.gif" lazyload class="" title="image-20220902140008810">
+<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/image-20220902140008810.png" srcset="/img/loading.gif" lazyload class="">
 
 <p>通常来说，一个页上保存了成百上千的索引项数据。随着索引文件不断被写入，Page #12不断地被填充新的索引项。如果此时索引查询方都来自 ISR 副本或 Lag 很小的消费者，那么这些查询大多集中在对 Page #12 的查询，因此，Page #0、6、9、11、12 一定经常性地被源码访问。也就是说，这些页一定保存在页缓存上。后面当新的索引项填满了 Page#12，页缓存就会申请一个新的 Page 来保存索引项，即 Page #13。</p>
 <p>现在，最新索引项保存在 Page #13 中。如果要查找最新索引项，原版二分查找算法将会依次访问 Page #0、7、10、12 和 13。此时，问题来了：Page 7 和 10 已经很久没有被访问过了，它们大概率不在页缓存中，因此，一旦索引开始征用 Page #13，就会发生Page Fault，等待那些冷页数据从磁盘中加载到页缓存。根据国外用户的测试，这种加载过程可能长达 1 秒。</p>
@@ -356,10 +356,10 @@
 <p><strong>对于 kafka 来说，Producer 生产的数据存到 Broker，这个过程读取到 socket buffer 的网络数据，其实可以直接在OS内核缓冲区，完成落盘。并没有必要将 socket buffer 的网络数据，读取到应用进程缓冲区；在这里应用进程缓冲区其实就是 broker，broker 收到生产者的数据，就是为了持久化。</strong></p>
 <p>在此特殊场景下：接收来自socket buffer的网络数据，应用进程不需要中间处理、直接进行持久化时。——可以使用mmap内存文件映射。</p>
 <p>下图是普通 I&#x2F;O 操作的流程，普通的IO操作的一个弊端，必然涉及到两次数据拷贝操作，对磁盘读写性能是有影响的。必须先把数据写入到用户进程私有空间里去，然后从这里再进入内核IO缓冲区，最后进入磁盘文件里去</p>
-<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/B75D7781A04D496BBF29C8FC92094794.png" srcset="/img/loading.gif" lazyload class="" title="image">
+<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/B75D7781A04D496BBF29C8FC92094794.png" srcset="/img/loading.gif" lazyload class="">
 
 <p>采用内存映射后，将用户空间的一段内存区域映射到内核空间，映射成功后，用户对这段内存区域的修改可以直接反映到内核空间，同样，内核空间对这段区域的修改也可以直接反映到用户空间。这样，在进行网络传输时，就可以减少内核空间到用户空间的拷贝次数。<strong>PageCache，实际上在这里就是对应于虚拟内存</strong>，示意图如下：</p>
-<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/image-20220902154900934.png" srcset="/img/loading.gif" lazyload class="" title="image-20220902154900934">
+<img src="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/image-20220902154900934.png" srcset="/img/loading.gif" lazyload class="">
 
 <p>上面的图里，似乎只有一次数据拷贝的过程，他就是从PageCache里拷贝到磁盘文件里而已！这个就是你使用mmap技术之后，相比于传统磁盘IO的一个性能优化。</p>
 <p>通过使用内存映射可以减少一次数据拷贝，从而提高读写性能。</p>
