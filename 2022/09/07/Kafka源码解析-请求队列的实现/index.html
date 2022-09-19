@@ -1,0 +1,531 @@
+
+
+<!DOCTYPE html>
+<html lang="zh-CN" data-default-color-scheme=&#34;auto&#34;>
+
+
+
+<head>
+  <meta charset="UTF-8">
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/favicon.png">
+  <link rel="icon" href="/img/favicon.png">
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="description" content="">
+  <meta name="author" content="Dongys">
+  <meta name="keywords" content="">
+  
+  <title>Kafka源码解析-请求队列的实现 - Blog</title>
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/css/bootstrap.min.css" />
+
+
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/github-markdown-css@4.0.0/github-markdown.min.css" />
+  <link  rel="stylesheet" href="/lib/hint/hint.min.css" />
+
+  
+    
+    
+      
+      <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/highlight.js@10.7.2/styles/github-gist.min.css" />
+    
+  
+
+  
+    <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.css" />
+  
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1749284_ba1fz6golrf.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/font_1736178_kmeydafke9r.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+<!-- 自定义样式保持在最底部 -->
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    var CONFIG = {"hostname":"dong-ys.github.io","root":"/","version":"1.8.11","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"right","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"copy_btn":true,"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"baidu":null,"google":null,"gtag":null,"tencent":{"sid":null,"cid":null},"woyaola":null,"cnzz":null,"leancloud":{"app_id":null,"app_key":null,"server_url":null}},"search_path":"/local-search.xml"};
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+<meta name="generator" content="Hexo 6.2.0"></head>
+
+
+<body>
+  <header style="height: 70vh;">
+    <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand"
+       href="/">&nbsp;<strong>Dongys's Blog</strong>&nbsp;</a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/">
+                <i class="iconfont icon-home-fill"></i>
+                首页
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/">
+                <i class="iconfont icon-archive-fill"></i>
+                归档
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/">
+                <i class="iconfont icon-category-fill"></i>
+                分类
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/">
+                <i class="iconfont icon-tags-fill"></i>
+                标签
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/">
+                <i class="iconfont icon-user-fill"></i>
+                关于
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" data-toggle="modal" data-target="#modalSearch">&nbsp;<i
+                class="iconfont icon-search"></i>&nbsp;</a>
+          </li>
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self">&nbsp;<i
+                class="iconfont icon-dark" id="color-toggle-icon"></i>&nbsp;</a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+    <div class="banner" id="banner" parallax=true
+         style="background: url('https://picture.zwc365.com/getbing.jpg') no-repeat center center;
+           background-size: cover;">
+      <div class="full-bg-img">
+        <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+          <div class="page-header text-center fade-in-up">
+            <span class="h2" id="subtitle" title="Kafka源码解析-请求队列的实现">
+              
+            </span>
+
+            
+              <div class="mt-3">
+  
+  
+    <span class="post-meta">
+      <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+      <time datetime="2022-09-07 21:59" pubdate>
+        2022年9月7日 晚上
+      </time>
+    </span>
+  
+</div>
+
+<div class="mt-1">
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-chart"></i>
+      4.5k 字
+    </span>
+  
+
+  
+    
+    <span class="post-meta mr-2">
+      <i class="iconfont icon-clock-fill"></i>
+      
+      
+      58
+       分钟
+    </span>
+  
+
+  
+  
+</div>
+
+            
+          </div>
+
+          
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="d-none d-lg-block col-lg-2"></div>
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div class="py-5" id="board">
+          <article class="post-content mx-auto">
+            <!-- SEO header -->
+            <h1 style="display: none">Kafka源码解析-请求队列的实现</h1>
+            
+            <div class="markdown-body">
+              <h1 id="Kafka源码解析-请求队列的实现"><a href="#Kafka源码解析-请求队列的实现" class="headerlink" title="Kafka源码解析-请求队列的实现"></a>Kafka源码解析-请求队列的实现</h1><h2 id="概念"><a href="#概念" class="headerlink" title="概念"></a>概念</h2><p>Kafka 服务器端，也就是 Broker，它承担着消息持久化的功能，但本质上，它其实就是<strong>一个不断接收外部请求、处理请求，然后发送处理结果的 Java进程</strong>。Kafka Broker 端的代码虽然是用 Scala 编写的，但是Scala 代码被编译之后生成.class 文件，它和 Java 代码被编译后的效果是一样的，因此，Broker 启动后也仍然是一个普通的 Java 进程。</p>
+<p><strong>高效地保存排队中的请求，是确保 Broker 高处理性能的关键</strong>。接下来，我们就一起看下 <strong>Broker 底层请求对象的建模</strong>和<strong>请求队列的实现原理</strong>，以及 Broker<strong>请求处理方面的核心监控指标</strong>。</p>
+<h2 id="请求（Request）"><a href="#请求（Request）" class="headerlink" title="请求（Request）"></a>请求（Request）</h2><p>先来看一下 RequestChannel 源码中的 Request 定义：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">sealed</span> <span class="hljs-class"><span class="hljs-keyword">trait</span> <span class="hljs-title">BaseRequest</span></span><br><span class="hljs-keyword">case</span> <span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">ShutdownRequest</span> <span class="hljs-keyword">extends</span> <span class="hljs-title">BaseRequest</span></span><br><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Request</span>(<span class="hljs-params">val processor: <span class="hljs-type">Int</span>, // 网络接受线程的序列号，<span class="hljs-type">Processor</span>线程只负责接受请求，不负责处理逻辑</span></span><br><span class="hljs-params"><span class="hljs-class">              val context: <span class="hljs-type">RequestContext</span>, // 标识请求上下文信息</span></span><br><span class="hljs-params"><span class="hljs-class">              val startTimeNanos: <span class="hljs-type">Long</span>, // 记录了 <span class="hljs-type">Request</span> 对象被创建的时间，主要用于各种时间统计指标的计算</span></span><br><span class="hljs-params"><span class="hljs-class">              val memoryPool: <span class="hljs-type">MemoryPool</span>, // 一个非阻塞式的内存缓冲区，主要作用是避免<span class="hljs-type">Request</span>对象无限使用内存</span></span><br><span class="hljs-params"><span class="hljs-class">              @volatile var buffer: <span class="hljs-type">ByteBuffer</span>, // 真正保存 <span class="hljs-type">Request</span> 对象内容的字节缓冲区</span></span><br><span class="hljs-params"><span class="hljs-class">              metrics: <span class="hljs-type">RequestChannel</span>.<span class="hljs-type">Metrics</span>, // 监控指标的一个管理类</span></span><br><span class="hljs-params"><span class="hljs-class">              val envelope: <span class="hljs-type">Option</span>[<span class="hljs-type">RequestChannel</span>.<span class="hljs-type">Request</span>] = <span class="hljs-type">None</span></span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">BaseRequest</span></span><br></code></pre></td></tr></table></figure>
+
+<p>Scala 语言中的<code>trait</code>关键字，大致类似于 Java 中的 interface（接口）。从代码中，我们可以知道，BaseRequest 是一个 trait 接口，定义了基础的请求类型。它有两个实现类：<strong>ShutdownRequest 类</strong>和 <strong>Request 类</strong>。</p>
+<p>ShutdownRequest 仅仅起到一个标志位的作用。当 Broker 进程关闭时，请求处理器（RequestHandler）会发送 ShutdownRequest 到专属的请求处理线程。该线程接收到此请求后，会主动触发一系列的 Broker 关闭逻辑。</p>
+<p>Request 则是真正定义各类 Clients 端或 Broker 端请求的实现类。它定义的属性包括 processor、context、startTimeNanos、memoryPool、buffer 和 metrics。</p>
+<h3 id="processor"><a href="#processor" class="headerlink" title="processor"></a>processor</h3><p>processor 是 Processor 线程的序号，即<strong>这个请求是由哪个 Processor 线程接收处理的</strong>。Broker 端参数 num.network.threads 控制了 Broker 每个监听器上创建的 Processor 线程数。</p>
+<p>假设你的 listeners 配置为 PLAINTEXT:&#x2F;&#x2F;localhost:9092,SSL:&#x2F;&#x2F;localhost:9093，那么，在默认情况下，Broker 启动时会创建 6 个 Processor 线程，每 3 个为一组，分别给 listeners 参数中设置的两个监听器使用，每组的序号分别是 0、1、2。</p>
+<p>当 Request 被后面的 I&#x2F;O 线程处理完成后，需要依靠 Processor 线程发送 Response 给请求发送方，因此，Request 中必须记录它之前是被哪个 Processor 线程接收的。<strong>Processor 线程仅仅是网络接收线程，不会执行真正的 Request 请求处理逻辑</strong>，那是 I&#x2F;O 线程负责的事情，采用了 Reactor 模型设计。</p>
+<h3 id="context"><a href="#context" class="headerlink" title="context"></a>context</h3><p><strong>context 是用来标识请求上下文信息的</strong>。Kafka 源码中定义了 RequestContext 类，顾名思义，它保存了有关 Request 的所有上下文信息。RequestContext 类定义在 clients 工程中，下面是它主要的逻辑代码：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> <span class="hljs-keyword">class</span> <span class="hljs-title class_">RequestContext</span> <span class="hljs-keyword">implements</span> <span class="hljs-title class_">AuthorizableRequestContext</span> &#123;<br>    <span class="hljs-comment">// Request 头部信息，主要是对用户不可见的信息，如版本、id之类的</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> RequestHeader header;<br>    <span class="hljs-comment">// Request 发送方的 TCP 连接串标识</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> String connectionId;<br>    <span class="hljs-comment">// Request 发送方的 ip 地址</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> InetAddress clientAddress;<br>    <span class="hljs-comment">// Kafka 用户认证类</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> KafkaPrincipal principal;<br>    <span class="hljs-comment">// 监听器名称</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ListenerName listenerName;<br>    <span class="hljs-comment">// 安全协议类型，目前支持4种（PLAINTEXT，SSL，SASL_PLAINTEXT，SASL_SSL）</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> SecurityProtocol securityProtocol;<br>    <span class="hljs-comment">// 用户自定义的一些发送方信息</span><br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> ClientInformation clientInformation;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> <span class="hljs-type">boolean</span> fromPrivilegedListener;<br>    <span class="hljs-keyword">public</span> <span class="hljs-keyword">final</span> Optional&lt;KafkaPrincipalSerde&gt; principalSerde;<br>  <br>    <span class="hljs-comment">// 从给定的ByteBuffer中提取出Request和对应的Size值</span><br>    <span class="hljs-keyword">public</span> RequestAndSize <span class="hljs-title function_">parseRequest</span><span class="hljs-params">(ByteBuffer buffer)</span> &#123;<br>        ...<br>    &#125;<br>	  ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="startTimeNanos"><a href="#startTimeNanos" class="headerlink" title="startTimeNanos"></a>startTimeNanos</h3><p><strong>startTimeNanos 记录了 Request 对象被创建的时间，主要用于各种时间统计指标的计算</strong>。</p>
+<p>请求对象中的很多 JMX 指标，特别是时间类的统计指标，都需要使用 startTimeNanos 字段。需要注意的是，<strong>它是以纳秒为单位的时间戳信息，可以实现非常细粒度的时间统计精度</strong>。</p>
+<h3 id="memoryPool"><a href="#memoryPool" class="headerlink" title="memoryPool"></a>memoryPool</h3><p>memoryPool 表示源码定义的一个非阻塞式的内存缓冲区，主要作用是<strong>避免 Request 对象无限使用内存</strong>。</p>
+<p>当前，该内存缓冲区的接口类和实现类，分别是 MemoryPool 和 SimpleMemoryPool。SimpleMemoryPool 分配内存的方法如下：</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-meta">@Override</span><br><span class="hljs-keyword">public</span> ByteBuffer <span class="hljs-title function_">tryAllocate</span><span class="hljs-params">(<span class="hljs-type">int</span> sizeBytes)</span> &#123;<br>    <span class="hljs-keyword">if</span> (sizeBytes &lt; <span class="hljs-number">1</span>)<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;requested size &quot;</span> + sizeBytes + <span class="hljs-string">&quot;&lt;=0&quot;</span>);<br>    <span class="hljs-keyword">if</span> (sizeBytes &gt; maxSingleAllocationSize)<br>        <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">IllegalArgumentException</span>(<span class="hljs-string">&quot;requested size &quot;</span> + sizeBytes + <span class="hljs-string">&quot; is larger than maxSingleAllocationSize &quot;</span> + maxSingleAllocationSize);<br><br>    <span class="hljs-type">long</span> available;<br>    <span class="hljs-type">boolean</span> <span class="hljs-variable">success</span> <span class="hljs-operator">=</span> <span class="hljs-literal">false</span>;<br>    <span class="hljs-comment">//in strict mode we will only allocate memory if we have at least the size required.</span><br>    <span class="hljs-comment">//in non-strict mode we will allocate memory if we have _any_ memory available (so available memory</span><br>    <span class="hljs-comment">//can dip into the negative and max allocated memory would be sizeBytes + maxSingleAllocationSize)</span><br>    <span class="hljs-type">long</span> <span class="hljs-variable">threshold</span> <span class="hljs-operator">=</span> strict ? sizeBytes : <span class="hljs-number">1</span>;<br>    <span class="hljs-keyword">while</span> ((available = availableMemory.get()) &gt;= threshold) &#123;<br>        success = availableMemory.compareAndSet(available, available - sizeBytes);<br>        <span class="hljs-keyword">if</span> (success)<br>            <span class="hljs-keyword">break</span>;<br>    &#125;<br><br>    <span class="hljs-keyword">if</span> (success) &#123;<br>        maybeRecordEndOfDrySpell();<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-keyword">if</span> (oomTimeSensor != <span class="hljs-literal">null</span>) &#123;<br>            startOfNoMemPeriod.compareAndSet(<span class="hljs-number">0</span>, System.nanoTime());<br>        &#125;<br>        log.trace(<span class="hljs-string">&quot;refused to allocate buffer of size &#123;&#125;&quot;</span>, sizeBytes);<br>        <span class="hljs-keyword">return</span> <span class="hljs-literal">null</span>;<br>    &#125;<br>		<span class="hljs-comment">// 分配内存</span><br>    <span class="hljs-type">ByteBuffer</span> <span class="hljs-variable">allocated</span> <span class="hljs-operator">=</span> ByteBuffer.allocate(sizeBytes);<br>    <span class="hljs-comment">// 底层通过弱引用的键值对存储，便于回收</span><br>    bufferToBeReturned(allocated);<br>    <span class="hljs-keyword">return</span> allocated;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="buffer"><a href="#buffer" class="headerlink" title="buffer"></a>buffer</h3><p>buffer 是真正保存 Request 对象内容的字节缓冲区。Request 发送方必须按照 Kafka RPC 协议规定的格式向该缓冲区写入字节，否则将抛出 InvalidRequestException 异常。<strong>这个逻辑主要是由 RequestContext 的 parseRequest 方法实现的</strong>。</p>
+<figure class="highlight java"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><code class="hljs java"><span class="hljs-keyword">public</span> RequestAndSize <span class="hljs-title function_">parseRequest</span><span class="hljs-params">(ByteBuffer buffer)</span> &#123;<br>    <span class="hljs-keyword">if</span> (isUnsupportedApiVersionsRequest()) &#123;<br>        <span class="hljs-comment">// Unsupported ApiVersion requests are treated as v0 requests and are not parsed</span><br>        <span class="hljs-comment">// 不支持的ApiVersions请求类型被视为是V0版本的请求，并且不做解析操作，直接返回</span><br>        <span class="hljs-type">ApiVersionsRequest</span> <span class="hljs-variable">apiVersionsRequest</span> <span class="hljs-operator">=</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">ApiVersionsRequest</span>(<span class="hljs-keyword">new</span> <span class="hljs-title class_">ApiVersionsRequestData</span>(), (<span class="hljs-type">short</span>) <span class="hljs-number">0</span>, header.apiVersion());<br>        <span class="hljs-keyword">return</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">RequestAndSize</span>(apiVersionsRequest, <span class="hljs-number">0</span>);<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>        <span class="hljs-comment">// 从请求头部数据中获取ApiKeys信息</span><br>        <span class="hljs-type">ApiKeys</span> <span class="hljs-variable">apiKey</span> <span class="hljs-operator">=</span> header.apiKey();<br>        <span class="hljs-keyword">try</span> &#123;<br>            <span class="hljs-comment">// 从请求头部数据中获取版本信息</span><br>            <span class="hljs-type">short</span> <span class="hljs-variable">apiVersion</span> <span class="hljs-operator">=</span> header.apiVersion();<br>            <span class="hljs-comment">// 解析请求，并返回</span><br>            <span class="hljs-keyword">return</span> AbstractRequest.parseRequest(apiKey, apiVersion, buffer);<br>        &#125; <span class="hljs-keyword">catch</span> (Throwable ex) &#123;<br>            <span class="hljs-keyword">throw</span> <span class="hljs-keyword">new</span> <span class="hljs-title class_">InvalidRequestException</span>(<span class="hljs-string">&quot;Error getting request for apiKey: &quot;</span> + apiKey +<br>                    <span class="hljs-string">&quot;, apiVersion: &quot;</span> + header.apiVersion() +<br>                    <span class="hljs-string">&quot;, connectionId: &quot;</span> + connectionId +<br>                    <span class="hljs-string">&quot;, listenerName: &quot;</span> + listenerName +<br>                    <span class="hljs-string">&quot;, principal: &quot;</span> + principal, ex);<br>        &#125;<br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这个方法的主要目的是<strong>从 ByteBuffer 中提取对应的 Request 对象以及它的大小</strong>。</p>
+<p>首先，代码会判断该 Request 是不是 Kafka 不支持的 ApiVersions 请求版本。如果是不支持的，就直接构造一个 V0 版本的 ApiVersions 请求，然后返回。否则的话，就继续下面的步骤。</p>
+<p>当 Broker 接收到一个 ApiVersionsRequest 的时候，它会返回 Broker 当前支持的请求类型列表，包括请求类型名称、支持的最早版本号和最新版本号。</p>
+<p>如果是 ApiVersions 类型的请求，代码中要判断一下它的版本呢。这是因为，和处理其他类型请求不同的是，Kafka 必须保证版本号比最新支持版本还要高的 ApiVersions 请求也能被处理。这主要是考虑到了客户端和服务器端版本的兼容问题。客户端发送请求给 Broker 的时候，很可能不知道 Broker 到底支持哪些版本的请求，它需要使用 ApiVersionsRequest 去获取完整的请求版本支持列表。但是，如果不做这个判断，Broker 可能无法处理客户端发送的 ApiVersionsRequest。</p>
+<p>通过这个检查之后，代码会从请求头部数据中获取 ApiKeys 信息以及对应的版本信息，然后解析请求，最后封装解析后的请求对象以及请求大小，并返回。</p>
+<p><strong>高版本的 Broker 只能接受低版本的客户端请求，而高版本的客户端只能消费低版本的 Broker 请求。</strong></p>
+<h3 id="metrics"><a href="#metrics" class="headerlink" title="metrics"></a>metrics</h3><p>metrics 是 Request 相关的各种监控指标的一个管理类。它里面构建了一个 Map，封装了所有的请求 JMX 指标。除了上面这些重要的字段属性之外，Request 类中的大部分代码都是与监控指标相关的，后面我们再详细说。</p>
+<h2 id="响应（Response）"><a href="#响应（Response）" class="headerlink" title="响应（Response）"></a>响应（Response）</h2><p>Kafka 为 Response 定义了 1 个抽象父类和 5 个具体子类，如下图所示：</p>
+<img src="/2022/09/07/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E8%AF%B7%E6%B1%82%E9%98%9F%E5%88%97%E7%9A%84%E5%AE%9E%E7%8E%B0/image-20220908165927267.png" srcset="/img/loading.gif" lazyload class="" title="image-20220908165927267">
+
+<ul>
+<li><p>Response：定义 Response 的抽象基类。每个 Response 对象都包含了对应的Request 对象。这个类里最重要的方法是 onComplete 方法，用来实现每类 Response 被处理后需要执行的回调逻辑。</p>
+</li>
+<li><p>SendResponse：Kafka 大多数 Request 处理完成后都需要执行一段回调逻辑，SendResponse 就是保存返回结果的 Response 子类。里面最重要的字段是 <strong>onCompletionCallback</strong>，即<strong>指定处理完成之后的回调逻辑</strong>。</p>
+</li>
+<li><p>NoResponse：有些 Request 处理完成后无需单独执行额外的回调逻辑。NoResponse 就是为这类 Response 准备的。</p>
+</li>
+<li><p>CloseConnectionResponse：用于出错后需要关闭 TCP 连接的场景，此时返回 CloseConnectionResponse 给 Request 发送方，显式地通知它关闭连接。</p>
+</li>
+<li><p>StartThrottlingResponse：用于通知 Broker 的 Socket Server 组件某个 TCP 连接通信通道开始被限流（throttling）。</p>
+</li>
+<li><p>EndThrottlingResponse：与 StartThrottlingResponse 对应，通知 Broker 的 SocketServer 组件某个 TCP 连接通信通道的限流已结束。</p>
+</li>
+</ul>
+<p>总结下这几个类的作用，SendResponse 表示正常需要发送 Response，而 NoResponse 表示无需发送 Response。CloseConnectionResponse是用于标识关闭连接通道的 Response。而后面两个 Response 类不是很常用，它们仅仅在对 Socket 连接进行限流时，才会派上用场。</p>
+<p>Response 抽象类的定义如下：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-keyword">sealed</span> <span class="hljs-keyword">abstract</span> <span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">Response</span>(<span class="hljs-params">val request: <span class="hljs-type">Request</span></span>) </span>&#123;<br><br>  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">processor</span></span>: <span class="hljs-type">Int</span> = request.processor<br><br>  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">responseLog</span></span>: <span class="hljs-type">Option</span>[<span class="hljs-type">JsonNode</span>] = <span class="hljs-type">None</span><br>  <br>  <span class="hljs-comment">// 回调逻辑</span><br>  <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">onComplete</span></span>: <span class="hljs-type">Option</span>[<span class="hljs-type">Send</span> =&gt; <span class="hljs-type">Unit</span>] = <span class="hljs-type">None</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这个抽象基类只有一个属性字段：request。这就是说，<strong>每个 Response 对象都要保存它对应的 Request 对象</strong>。onComplete 方法是调用指定回调逻辑的地方。SendResponse 类就是复写（Override）了这个方法，如下所示：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">SendResponse</span>(<span class="hljs-params">request: <span class="hljs-type">Request</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">                   val responseSend: <span class="hljs-type">Send</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">                   val responseLogValue: <span class="hljs-type">Option</span>[<span class="hljs-type">JsonNode</span>],</span></span><br><span class="hljs-params"><span class="hljs-class">                   val onCompleteCallback: <span class="hljs-type">Option</span>[<span class="hljs-type">Send</span> =&gt; <span class="hljs-type">Unit</span>]</span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">Response</span>(<span class="hljs-params">request</span>) </span>&#123;<br>  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">responseLog</span></span>: <span class="hljs-type">Option</span>[<span class="hljs-type">JsonNode</span>] = responseLogValue<br><br>  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">onComplete</span></span>: <span class="hljs-type">Option</span>[<span class="hljs-type">Send</span> =&gt; <span class="hljs-type">Unit</span>] = onCompleteCallback<br><br>  <span class="hljs-keyword">override</span> <span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">toString</span></span>: <span class="hljs-type">String</span> =<br>    <span class="hljs-string">s&quot;Response(type=Send, request=<span class="hljs-subst">$request</span>, send=<span class="hljs-subst">$responseSend</span>, asString=<span class="hljs-subst">$responseLogValue</span>)&quot;</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>这里的 SendResponse 类继承了 Response 父类，并重新定义了 onComplete 方法。复写的逻辑很简单，就是指定输入参数 onCompleteCallback。</p>
+<h2 id="RequestChannel"><a href="#RequestChannel" class="headerlink" title="RequestChannel"></a>RequestChannel</h2><p>RequestChannel，顾名思义，就是传输 Request&#x2F;Response 的通道。先看一下 RequestChannel 类的定义和重要字段：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-class"><span class="hljs-keyword">class</span> <span class="hljs-title">RequestChannel</span>(<span class="hljs-params">val queueSize: <span class="hljs-type">Int</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">                     val metricNamePrefix: <span class="hljs-type">String</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">                     time: <span class="hljs-type">Time</span>,</span></span><br><span class="hljs-params"><span class="hljs-class">                     val metrics: <span class="hljs-type">RequestChannel</span>.<span class="hljs-type">Metrics</span></span>) <span class="hljs-keyword">extends</span> <span class="hljs-title">KafkaMetricsGroup</span> </span>&#123;<br>  <span class="hljs-keyword">import</span> <span class="hljs-type">RequestChannel</span>._<br>  <span class="hljs-comment">// 线程安全的阻塞队列</span><br>  <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> requestQueue = <span class="hljs-keyword">new</span> <span class="hljs-type">ArrayBlockingQueue</span>[<span class="hljs-type">BaseRequest</span>](queueSize)<br>  <span class="hljs-comment">// Processor线程池</span><br>  <span class="hljs-keyword">private</span> <span class="hljs-keyword">val</span> processors = <span class="hljs-keyword">new</span> <span class="hljs-type">ConcurrentHashMap</span>[<span class="hljs-type">Int</span>, <span class="hljs-type">Processor</span>]()<br>  <span class="hljs-keyword">val</span> requestQueueSizeMetricName = metricNamePrefix.concat(<span class="hljs-type">RequestQueueSizeMetric</span>)<br>  <span class="hljs-keyword">val</span> responseQueueSizeMetricName = metricNamePrefix.concat(<span class="hljs-type">ResponseQueueSizeMetric</span>)<br>  ...<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>RequestChannel 类实现了 KafkaMetricsGroup trait，后者封装了许多实用的指标监控方法，比如，newGauge 方法用于创建数值型的监控指标，newHistogram 方法用于创建直方图型的监控指标。</p>
+<p><strong>就 RequestChannel 类本身的主体功能而言，它定义了最核心的 3 个属性：requestQueue、queueSize 和 processors</strong>。</p>
+<ul>
+<li><p>requestQueue：每个 RequestChannel 对象实例创建时，会定义一个队列来保存 Broker 接收到的各类请求，这个队列被称为请求队列或 Request 队列。Kafka 使用 <strong>Java 提供的阻塞队列ArrayBlockingQueue</strong> 实现这个请求队列，并利用它天然提供的线程安全性来保证多个线程能够并发安全高效地访问请求队列。</p>
+</li>
+<li><p>queueSize：表示Request 队列的最大长度。当 Broker 启动时，SocketServer 组件会创建 RequestChannel 对象，并把 Broker 端参数 queued.max.requests 赋值给 queueSize。因此，在默认情况下，每个 RequestChannel 上的队列长度是 500。</p>
+</li>
+<li><p>processors：封装的是 RequestChannel 下辖的 Processor 线程池。每个 Processor 线程负责具体的请求处理逻辑。</p>
+</li>
+</ul>
+<h2 id="Processor管理"><a href="#Processor管理" class="headerlink" title="Processor管理"></a>Processor管理</h2><p>RequestChannel 的成员变量有一个 Processor 线程池——当然，它是用 Java 的 ConcurrentHashMap 数据结构去保存的。Map 中的 Key 就是前面我们说的 processor序号，而 Value 则对应具体的 Processor 线程对象。</p>
+<p>这个线程池的存在告诉了我们一个事实：<strong>当前 Kafka Broker 端所有网络线程都是在RequestChannel 中维护的</strong>。既然创建了线程池，代码中必然要有管理线程池的操作。RequestChannel 中的 addProcessor 和 removeProcessor 方法就是做这些事的。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-comment">// 添加到Processor线程池</span><br><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">addProcessor</span></span>(processor: <span class="hljs-type">Processor</span>): <span class="hljs-type">Unit</span> = &#123;<br>  <span class="hljs-keyword">if</span> (processors.putIfAbsent(processor.id, processor) != <span class="hljs-literal">null</span>)<br>    warn(<span class="hljs-string">s&quot;Unexpected processor with processorId <span class="hljs-subst">$&#123;processor.id&#125;</span>&quot;</span>)<br><br>  <span class="hljs-comment">// 创建对应监控指标</span><br>  newGauge(responseQueueSizeMetricName, () =&gt; processor.responseQueueSize,<br>    <span class="hljs-type">Map</span>(<span class="hljs-type">ProcessorMetricTag</span> -&gt; processor.id.toString))<br>&#125;<br><br><span class="hljs-comment">// 从Processor线程池中移除对应的Processor</span><br><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">removeProcessor</span></span>(processorId: <span class="hljs-type">Int</span>): <span class="hljs-type">Unit</span> = &#123;<br>  processors.remove(processorId)<br>  removeMetric(responseQueueSizeMetricName, <span class="hljs-type">Map</span>(<span class="hljs-type">ProcessorMetricTag</span> -&gt; processorId.toString))<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>操作很简单，基本上就是调用 ConcurrentHashMap 的 putIfAbsent 和 remove 方法分别实现增加和移除线程。每当 Broker 启动时，它都会调用 addProcessor 方法，向 RequestChannel 对象添加<code>num.network.threads</code>个 Processor 线程。</p>
+<p>而<code>num.network.threads</code>这个参数的更新模式（Update Mode）是 Cluster-wide。这就说明，Kafka 允许你动态地修改此参数值。比如，Broker 启动时指定 num.network.threads 为 8，之后你通过 <code>kafka-configs</code>命令将其修改为 3。显然，这个操作会减少 Processor 线程池中的线程数量。在这个场景下，removeProcessor 方法会被调用。</p>
+<h2 id="处理Request和Response"><a href="#处理Request和Response" class="headerlink" title="处理Request和Response"></a>处理Request和Response</h2><p>除了 Processor 的管理之外，RequestChannel 的另一个重要功能，是处理 <strong>Request 和Response</strong>，具体表现为收发 Request 和发送 Response。比如，收发 Request 的方法有 sendRequest 和 receiveRequest：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-comment">/** Send a request to be handled, potentially blocking until there is room in the queue for the request */</span><br><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sendRequest</span></span>(request: <span class="hljs-type">RequestChannel</span>.<span class="hljs-type">Request</span>): <span class="hljs-type">Unit</span> = &#123;<br>  requestQueue.put(request)<br>&#125;<br><span class="hljs-comment">/** Get the next request or block until specified time has elapsed */</span><br><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">receiveRequest</span></span>(timeout: <span class="hljs-type">Long</span>): <span class="hljs-type">RequestChannel</span>.<span class="hljs-type">BaseRequest</span> =<br>	requestQueue.poll(timeout, <span class="hljs-type">TimeUnit</span>.<span class="hljs-type">MILLISECONDS</span>)<br><br><span class="hljs-comment">/** Get the next request or block until there is one */</span><br><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">receiveRequest</span></span>(): <span class="hljs-type">RequestChannel</span>.<span class="hljs-type">BaseRequest</span> =<br>	requestQueue.take()<br></code></pre></td></tr></table></figure>
+
+<p>所谓的发送 Request，仅仅是将 Request 对象放置在 Request 队列中而已，而接收 Request 则是从队列中取出 Request。整个流程构成了一个迷你版的“生产者 - 消费者”模式，然后依靠 ArrayBlockingQueue 的线程安全性来确保整个过程的线程安全，如下所示：</p>
+<img src="/2022/09/07/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E8%AF%B7%E6%B1%82%E9%98%9F%E5%88%97%E7%9A%84%E5%AE%9E%E7%8E%B0/image-20220908184911691.png" srcset="/img/loading.gif" lazyload class="" title="image-20220908184911691">
+
+<p>上图的 I&#x2F;O thread 在 Kafka 中叫 KafkaRequestHandler，I&#x2F;O 线程池对应 KafkaRequestHandlerPool，此处不深入探究。</p>
+<p>对于 Response 而言，则没有所谓的接收 Response，只有发送 Response，即 sendResponse 方法。sendResponse 其实就是把 Response 对象发送出去，也就是将 Response 添加到 Response 队列的过程。</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-comment">/** Send a response back to the socket server to be sent over the network */</span><br><span class="hljs-function"><span class="hljs-keyword">def</span> <span class="hljs-title">sendResponse</span></span>(response: <span class="hljs-type">RequestChannel</span>.<span class="hljs-type">Response</span>): <span class="hljs-type">Unit</span> = &#123;<br><span class="hljs-comment">// 构造日志并输出</span><br>  <span class="hljs-keyword">if</span> (isTraceEnabled) &#123;<br>    <span class="hljs-keyword">val</span> requestHeader = response.request.headerForLoggingOrThrottling()<br>    <span class="hljs-keyword">val</span> message = response <span class="hljs-keyword">match</span> &#123;<br>      <span class="hljs-keyword">case</span> sendResponse: <span class="hljs-type">SendResponse</span> =&gt;<br>        <span class="hljs-string">s&quot;Sending <span class="hljs-subst">$&#123;requestHeader.apiKey&#125;</span> response to client <span class="hljs-subst">$&#123;requestHeader.clientId&#125;</span> of <span class="hljs-subst">$&#123;sendResponse.responseSend.size&#125;</span> bytes.&quot;</span><br>      <span class="hljs-keyword">case</span> _: <span class="hljs-type">NoOpResponse</span> =&gt;<br>        <span class="hljs-string">s&quot;Not sending <span class="hljs-subst">$&#123;requestHeader.apiKey&#125;</span> response to client <span class="hljs-subst">$&#123;requestHeader.clientId&#125;</span> as it&#x27;s not required.&quot;</span><br>      <span class="hljs-keyword">case</span> _: <span class="hljs-type">CloseConnectionResponse</span> =&gt;<br>        <span class="hljs-string">s&quot;Closing connection for client <span class="hljs-subst">$&#123;requestHeader.clientId&#125;</span> due to error during <span class="hljs-subst">$&#123;requestHeader.apiKey&#125;</span>.&quot;</span><br>      <span class="hljs-keyword">case</span> _: <span class="hljs-type">StartThrottlingResponse</span> =&gt;<br>        <span class="hljs-string">s&quot;Notifying channel throttling has started for client <span class="hljs-subst">$&#123;requestHeader.clientId&#125;</span> for <span class="hljs-subst">$&#123;requestHeader.apiKey&#125;</span>&quot;</span><br>      <span class="hljs-keyword">case</span> _: <span class="hljs-type">EndThrottlingResponse</span> =&gt;<br>        <span class="hljs-string">s&quot;Notifying channel throttling has ended for client <span class="hljs-subst">$&#123;requestHeader.clientId&#125;</span> for <span class="hljs-subst">$&#123;requestHeader.apiKey&#125;</span>&quot;</span><br>    &#125;<br>    trace(message)<br>  &#125;<br><br>  <span class="hljs-comment">// 设置时间参数</span><br>  response <span class="hljs-keyword">match</span> &#123;<br>    <span class="hljs-comment">// We should only send one of the following per request</span><br>    <span class="hljs-keyword">case</span> _: <span class="hljs-type">SendResponse</span> | _: <span class="hljs-type">NoOpResponse</span> | _: <span class="hljs-type">CloseConnectionResponse</span> =&gt;<br>      <span class="hljs-keyword">val</span> request = response.request<br>      <span class="hljs-keyword">val</span> timeNanos = time.nanoseconds()<br>      request.responseCompleteTimeNanos = timeNanos<br>      <span class="hljs-keyword">if</span> (request.apiLocalCompleteTimeNanos == <span class="hljs-number">-1</span>L)<br>        request.apiLocalCompleteTimeNanos = timeNanos<br>    <span class="hljs-comment">// For a given request, these may happen in addition to one in the previous section, skip updating the metrics</span><br>    <span class="hljs-keyword">case</span> _: <span class="hljs-type">StartThrottlingResponse</span> | _: <span class="hljs-type">EndThrottlingResponse</span> =&gt; ()<br>  &#125;<br><br>  <span class="hljs-comment">// 找出response对应的Processor线程，即request当初是由哪个Processor线程处理的</span><br>  <span class="hljs-keyword">val</span> processor = processors.get(response.processor)<br>  <span class="hljs-comment">// The processor may be null if it was shutdown. In this case, the connections</span><br>  <span class="hljs-comment">// are closed, so the response is dropped.</span><br>  <span class="hljs-keyword">if</span> (processor != <span class="hljs-literal">null</span>) &#123;<br>    <span class="hljs-comment">// 将response对象放置到对应Processor线程的Response队列中</span><br>    processor.enqueueResponse(response)<br>  &#125;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>sendResponse 的逻辑相对简单，首先构造日志字符串，然后匹配 Response 的类型，并设置相关时间参数，接着，代码会找出 Response 对象对应的 Processor 线程。当 Processor 处理完某个 Request 后，会把自己的序号封装进对应的 Response 对象。一旦找出了之前是由哪个 Processor 线程处理的，代码直接调用该 Processor 的 enqueueResponse 方法，将 Response 放入 Response 队列中，等待后续发送。</p>
+<h2 id="监控指标的实现"><a href="#监控指标的实现" class="headerlink" title="监控指标的实现"></a>监控指标的实现</h2><p>RequestChannel 类还定义了丰富的监控指标，用于实时动态地监测 Request 和 Response 的性能表现。具体指标项如下：</p>
+<figure class="highlight scala"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs scala"><span class="hljs-class"><span class="hljs-keyword">object</span> <span class="hljs-title">RequestMetrics</span> </span>&#123;<br>  <span class="hljs-keyword">val</span> consumerFetchMetricName = <span class="hljs-type">ApiKeys</span>.<span class="hljs-type">FETCH</span>.name + <span class="hljs-string">&quot;Consumer&quot;</span><br>  <span class="hljs-keyword">val</span> followFetchMetricName = <span class="hljs-type">ApiKeys</span>.<span class="hljs-type">FETCH</span>.name + <span class="hljs-string">&quot;Follower&quot;</span><br><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">RequestsPerSec</span> = <span class="hljs-string">&quot;RequestsPerSec&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">RequestQueueTimeMs</span> = <span class="hljs-string">&quot;RequestQueueTimeMs&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">LocalTimeMs</span> = <span class="hljs-string">&quot;LocalTimeMs&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">RemoteTimeMs</span> = <span class="hljs-string">&quot;RemoteTimeMs&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">ThrottleTimeMs</span> = <span class="hljs-string">&quot;ThrottleTimeMs&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">ResponseQueueTimeMs</span> = <span class="hljs-string">&quot;ResponseQueueTimeMs&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">ResponseSendTimeMs</span> = <span class="hljs-string">&quot;ResponseSendTimeMs&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">TotalTimeMs</span> = <span class="hljs-string">&quot;TotalTimeMs&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">RequestBytes</span> = <span class="hljs-string">&quot;RequestBytes&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">MessageConversionsTimeMs</span> = <span class="hljs-string">&quot;MessageConversionsTimeMs&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">TemporaryMemoryBytes</span> = <span class="hljs-string">&quot;TemporaryMemoryBytes&quot;</span><br>  <span class="hljs-keyword">val</span> <span class="hljs-type">ErrorsPerSec</span> = <span class="hljs-string">&quot;ErrorsPerSec&quot;</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p><strong>RequestsPerSec</strong>：每秒处理的 Request 数，用来评估 Broker 的繁忙状态。</p>
+<p><strong>RequestQueueTimeMs</strong>：计算 Request 在 Request 队列中的平均等候时间，单位是毫秒。倘若 Request 在队列的等待时间过长，你通常需要增加后端 I&#x2F;O 线程的数量，来加快队列中 Request 的拿取速度。</p>
+<p><strong>LocalTimeMs</strong>：计算 Request 实际被处理的时间，单位是毫秒。一旦定位到这个监控项的值很大，你就需要进一步研究 Request 被处理的逻辑了，具体分析到底是哪一步消耗了过多的时间。</p>
+<p><strong>RemoteTimeMs</strong>：Kafka 的读写请求（PRODUCE 请求和 FETCH 请求）逻辑涉及等待其他 Broker 操作的步骤。RemoteTimeMs 计算的，就是等待其他 Broker 完成指定逻辑的时间。因为等待的是其他 Broker，因此被称为 Remote Time。这个监控项非常重要！Kafka 生产环境中设置 acks&#x3D;all 的 Producer 程序发送消息延时高的主要原因，往往就是 Remote Time 高。因此，如果你也碰到了这样的问题，不妨先定位一下 Remote Time 是不是瓶颈。</p>
+<p><strong>TotalTimeMs</strong>：计算 Request 被处理的完整流程时间。<strong>这是最实用的监控指标，没有之一！</strong>毕竟，我们通常都是根据 TotalTimeMs 来判断系统是否出现问题的。一旦发现了问题，我们才会利用前面的几个监控项进一步定位问题的原因。</p>
+<h2 id="总结"><a href="#总结" class="headerlink" title="总结"></a>总结</h2><p><strong>Request：定义了 Kafka Broker 支持的各类请求。</strong></p>
+<p><strong>Response：定义了与 Request 对应的各类响应。</strong></p>
+<p><strong>RequestChannel：实现了 Kafka Request 队列。</strong></p>
+<p><strong>监控指标：封装了与 Request 队列相关的重要监控指标。</strong></p>
+
+            </div>
+            <hr>
+            <div>
+              <div class="post-metas mb-3">
+                
+                  <div class="post-meta mr-3">
+                    <i class="iconfont icon-category"></i>
+                    
+                      <a class="hover-with-bg" href="/categories/Kafka/">Kafka</a>
+                    
+                  </div>
+                
+                
+                  <div class="post-meta">
+                    <i class="iconfont icon-tags"></i>
+                    
+                      <a class="hover-with-bg" href="/tags/Kafka/">Kafka</a>
+                    
+                      <a class="hover-with-bg" href="/tags/%E6%B6%88%E6%81%AF%E9%98%9F%E5%88%97/">消息队列</a>
+                    
+                  </div>
+                
+              </div>
+              
+                <p class="note note-warning">
+                  
+                    本博客所有文章除特别声明外，均采用 <a target="_blank" href="https://creativecommons.org/licenses/by-sa/4.0/deed.zh" rel="nofollow noopener noopener">CC BY-SA 4.0 协议</a> ，转载请注明出处！
+                  
+                </p>
+              
+              
+                <div class="post-prevnext">
+                  <article class="post-prev col-6">
+                    
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2022/09/02/Kafka%E6%BA%90%E7%A0%81%E8%A7%A3%E6%9E%90-%E7%B4%A2%E5%BC%95%E6%96%87%E4%BB%B6%E5%8F%8A%E5%86%85%E5%AD%98%E6%98%A0%E5%B0%84/">
+                        <span class="hidden-mobile">Kafka源码解析-索引文件及内存映射</span>
+                        <span class="visible-mobile">下一篇</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+    
+      <div class="d-none d-lg-block col-lg-2 toc-container" id="toc-ctn">
+        <div id="toc">
+  <p class="toc-header"><i class="iconfont icon-list"></i>&nbsp;目录</p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+      </div>
+    
+  </div>
+</div>
+
+<!-- Custom -->
+
+
+    
+
+    
+      <a id="scroll-top-button" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">搜索</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v"
+                 for="local-search-input">关键词</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+    
+
+    
+  </main>
+
+  <footer class="text-center mt-5 py-3">
+  <div class="footer-content">
+     <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+  </div>
+  
+
+  
+
+  
+</footer>
+
+
+  <!-- SCRIPTS -->
+  
+  <script  src="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://cdn.jsdelivr.net/npm/nprogress@0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js" ></script>
+<script  src="https://cdn.jsdelivr.net/npm/bootstrap@4.6.0/dist/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+<!-- Plugins -->
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+  
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/tocbot@4.12.3/dist/tocbot.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/@fancyapps/fancybox@3.5.7/dist/jquery.fancybox.min.js" ></script>
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/anchor-js@4.3.1/anchor.min.js" ></script>
+
+
+
+  <script defer src="https://cdn.jsdelivr.net/npm/clipboard@2.0.8/dist/clipboard.min.js" ></script>
+
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+
+  <script  src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12/lib/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var title = document.getElementById('subtitle').title;
+      
+      typing(title)
+      
+    })(window, document);
+  </script>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!-- 主题的启动项 保持在最底部 -->
+<script  src="/js/boot.js" ></script>
+
+
+</body>
+</html>
